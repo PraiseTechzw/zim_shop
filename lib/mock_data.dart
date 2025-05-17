@@ -68,6 +68,17 @@ class MockData {
       sellerId: 4,
       sellerName: 'seller2',
     ),
+     Product(
+      id: 5,
+      name: 'Motor Spare Parts - Kaguvi',
+      description: 'Motor spare parts from Kaguvi market.',
+      price: 2.20,
+      imageUrl: 'assets/images/motor.jpg',
+      category: 'Spare Parts',
+      location: 'Kaguvi',
+      sellerId: 4,
+      sellerName: 'seller5',
+    ),
   ];
 
   static final List<Order> orders = [
@@ -109,5 +120,6 @@ class MockData {
     'Kudzanai',
     'Mucheke',
     'Gokwe',
+    "Kaguvi"
   ];
 }
