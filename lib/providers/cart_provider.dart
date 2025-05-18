@@ -62,10 +62,10 @@ class CartProvider extends ChangeNotifier {
         'user_id': userId,
         'total_amount': totalAmount,
         'status': 'pending',
-        'shipping_name': shippingInfo?['name'],
-        'shipping_address': shippingInfo?['address'],
-        'shipping_phone': shippingInfo?['phone'],
-        'shipping_email': shippingInfo?['email'],
+        'shipping_name': shippingInfo?['name'] ?? '',
+        'shipping_address': shippingInfo?['address'] ?? '',
+        'shipping_phone': shippingInfo?['phone'] ?? '',
+        'shipping_email': shippingInfo?['email'] ?? '',
         'created_at': DateTime.now().toIso8601String(),
       };
       
