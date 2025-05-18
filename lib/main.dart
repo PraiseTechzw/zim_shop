@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:zim_shop/firebase_config.dart';
 import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/providers/theme_provider.dart';
@@ -11,7 +12,16 @@ import 'package:zim_shop/screen/admin_main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp();
+  
+  // Initialize Firebase settings (persistence, cache size, etc.)
+  await FirebaseConfig.initializeSettings();
+  
+  // Seed initial data if needed (first run)
+  await FirebaseConfig.seedInitialData();
+  
   runApp(
     MultiProvider(
       providers: [

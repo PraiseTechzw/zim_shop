@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:zim_shop/models/product.dart';
@@ -222,7 +222,7 @@ class FirebaseService {
           id: int.parse(doc.id),
           userId: int.parse(data['userId']),
           items: itemsList,
-          totalAmount: (data['totalAmount'] ?? 0).toDouble(),
+          totalAmount: itemsList.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity)),
           date: (data['createdAt'] as Timestamp).toDate(),
           status: data['status'] ?? 'Processing',
         );
@@ -263,7 +263,7 @@ class FirebaseService {
           id: int.parse(doc.id),
           userId: int.parse(data['userId']),
           items: itemsList,
-          totalAmount: itemsList.fold(0, (sum, item) => sum + (item.product.price * item.quantity)),
+          totalAmount: itemsList.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity)),
           date: (data['createdAt'] as Timestamp).toDate(),
           status: data['status'] ?? 'Processing',
         );
