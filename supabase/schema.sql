@@ -1,6 +1,43 @@
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Storage buckets for product images
+INSERT INTO storage.buckets (id, name, public) VALUES ('products', 'products', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for products bucket
+CREATE POLICY "Public products images are viewable by everyone" ON storage.objects
+  FOR SELECT USING (bucket_id = 'products' AND (storage.foldername(name))[1] = 'public');
+
+CREATE POLICY "Product images can be uploaded by sellers" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'products' AND
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'seller' AND is_approved = TRUE
+    )
+  );
+
+CREATE POLICY "Sellers can update their own product images" ON storage.objects
+  FOR UPDATE USING (
+    bucket_id = 'products' AND
+    EXISTS (
+      SELECT 1 FROM public.products p
+      JOIN public.users u ON p.seller_id = u.id
+      WHERE p.image_url LIKE '%' || name AND u.id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Sellers can delete their own product images" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'products' AND
+    EXISTS (
+      SELECT 1 FROM public.products p
+      JOIN public.users u ON p.seller_id = u.id
+      WHERE p.image_url LIKE '%' || name AND u.id = auth.uid()
+    )
+  );
+
 -- Create tables
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

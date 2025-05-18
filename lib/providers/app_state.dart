@@ -17,17 +17,21 @@ class AppState extends ChangeNotifier {
   UserRole _currentRole = UserRole.buyer;
   User? _currentUser;
   bool _isLoggedIn = false;
+  List<User> _users = [];
   
   final SupabaseService _supabaseService = SupabaseService();
 
   UserRole get currentRole => _currentRole;
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _isLoggedIn;
+  List<User> get users => _users;
   
   // Get users (this should only be used by admins)
   Future<List<User>> getUsers() async {
     // In production, we would check if the current user is an admin
-    return await _supabaseService.getAllUsers();
+    _users = await _supabaseService.getAllUsers();
+    notifyListeners();
+    return _users;
   }
 
   // Login with email and password
@@ -130,6 +134,12 @@ class AppState extends ChangeNotifier {
         _currentUser = user;
         _currentRole = user.role;
         _isLoggedIn = true;
+        
+        // If user is admin, fetch users
+        if (_currentRole == UserRole.admin) {
+          await getUsers();
+        }
+        
         notifyListeners();
       }
     }

@@ -149,9 +149,19 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   }
   
   Widget _buildUsersTab(AppState appState) {
+    if (!appState.isLoggedIn) {
+      return const Center(child: Text('Please login to view users'));
+    }
+    
+    if (appState.users.isEmpty) {
+      // Fetch users when tab is viewed
+      Future.microtask(() => appState.getUsers());
+      return const Center(child: CircularProgressIndicator());
+    }
+    
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: appState.isLoggedIn ? appState.users.length : 0,
+      itemCount: appState.users.length,
       itemBuilder: (context, index) {
         final user = appState.users[index];
         return Card(
@@ -171,7 +181,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                     value: user.isApproved,
                     onChanged: (value) {
                       // Update seller approval status
-                      appState.approveUser(user.id, value);
+                      appState.approveUser(user.id.toString(), value);
                     },
                   )
                 : null,

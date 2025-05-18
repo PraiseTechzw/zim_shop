@@ -4,6 +4,8 @@ import 'package:zim_shop/models/user.dart';
 import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/models/order.dart';
 import 'package:zim_shop/providers/app_state.dart' hide AuthException;
+import 'dart:io';
+import 'dart:typed_data';
 
 // Supabase configuration constants
 const String supabaseUrl = 'YOUR_SUPABASE_URL';
@@ -266,6 +268,76 @@ class SupabaseService {
       return true;
     } catch (e) {
       debugPrint('Error approving user: $e');
+      return false;
+    }
+  }
+  
+  // STORAGE METHODS
+  Future<String?> uploadProductImage(dynamic file, String sellerId) async {
+    try {
+      String fileName;
+      List<int> fileBytes;
+      
+      if (file is String) {
+        // It's a file path
+        final f = File(file);
+        fileName = f.path.split('/').last;
+        fileBytes = await f.readAsBytes();
+      } else if (file is File) {
+        // It's already a File object
+        fileName = file.path.split('/').last;
+        fileBytes = await file.readAsBytes();
+      } else if (file is Uint8List) {
+        // It's raw bytes
+        fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        fileBytes = file;
+      } else {
+        throw ArgumentError('Unsupported file type. Please provide a File, file path, or bytes.');
+      }
+      
+      final fileExt = fileName.split('.').last;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final storagePath = 'public/$sellerId/$timestamp.$fileExt';
+      
+      await _client
+          .storage
+          .from('products')
+          .uploadBinary(storagePath, Uint8List.fromList(fileBytes));
+      
+      // Get public URL for the uploaded image
+      final imageUrl = _client
+          .storage
+          .from('products')
+          .getPublicUrl(storagePath);
+      
+      return imageUrl;
+    } catch (e) {
+      debugPrint('Error uploading product image: $e');
+      return null;
+    }
+  }
+  
+  Future<bool> deleteProductImage(String imageUrl) async {
+    try {
+      // Extract path from URL
+      final uri = Uri.parse(imageUrl);
+      final pathSegments = uri.pathSegments;
+      
+      // The path should be something like: /storage/v1/object/public/products/public/seller-id/filename.ext
+      // We need to get everything after the bucket name ('products')
+      final startIndex = pathSegments.indexOf('products') + 1;
+      if (startIndex >= pathSegments.length) return false;
+      
+      final storagePath = pathSegments.sublist(startIndex).join('/');
+      
+      await _client
+          .storage
+          .from('products')
+          .remove([storagePath]);
+      
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting product image: $e');
       return false;
     }
   }
