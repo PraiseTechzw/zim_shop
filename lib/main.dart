@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/providers/theme_provider.dart';
-import 'package:zim_shop/screen/login_screen.dart' show LoginScreen;
+import 'package:zim_shop/screen/auth/login_screen.dart';
 
 void main() {
   runApp(
