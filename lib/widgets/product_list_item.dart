@@ -25,19 +25,34 @@ class ProductListItem extends StatelessWidget {
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Image.asset(
-          product.imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return const Center(
-              child: Icon(
-                Icons.image_not_supported,
-                size: 24,
-                color: Colors.grey,
-              ),
-            );
-          },
-        ),
+        child: product.imageUrl.startsWith('http')
+          ? Image.network(
+              product.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('Error loading image: $error');
+                return const Center(
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 24,
+                    color: Colors.grey,
+                  ),
+                );
+              },
+            )
+          : Image.asset(
+              product.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Center(
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 24,
+                    color: Colors.grey,
+                  ),
+                );
+              },
+            ),
       ),
       title: Text(product.name),
       subtitle: Text(

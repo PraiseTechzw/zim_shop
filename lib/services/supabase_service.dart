@@ -260,6 +260,14 @@ class SupabaseService {
         password: '', // We don't store passwords in the app
         role: role,
         isApproved: response['is_approved'] ?? false,
+        phoneNumber: response['phone_number'],
+        whatsappNumber: response['whatsapp_number'],
+        sellerBio: response['seller_bio'],
+        sellerRating: response['seller_rating'] != null 
+            ? (response['seller_rating'] as num).toDouble() 
+            : null,
+        businessName: response['business_name'],
+        businessAddress: response['business_address'],
       );
     } catch (e) {
       debugPrint('Error fetching user details: $e');
@@ -281,25 +289,88 @@ class SupabaseService {
     }
   }
   
+  // Update seller profile
+  Future<bool> updateSellerProfile({
+    required String sellerId,
+    String? phoneNumber,
+    String? whatsappNumber,
+    String? sellerBio,
+    String? businessName,
+    String? businessAddress,
+  }) async {
+    try {
+      final data = {
+        if (phoneNumber != null) 'phone_number': phoneNumber,
+        if (whatsappNumber != null) 'whatsapp_number': whatsappNumber,
+        if (sellerBio != null) 'seller_bio': sellerBio,
+        if (businessName != null) 'business_name': businessName,
+        if (businessAddress != null) 'business_address': businessAddress,
+      };
+      
+      if (data.isEmpty) return true; // Nothing to update
+      
+      await _client
+          .from('users')
+          .update(data)
+          .eq('id', sellerId);
+      
+      return true;
+    } catch (e) {
+      debugPrint('Error updating seller profile: $e');
+      return false;
+    }
+  }
+  
+  // Check if seller profile is complete
+  Future<bool> isSellerProfileComplete(String sellerId) async {
+    try {
+      final user = await _getUserDetails(sellerId);
+      return user?.hasCompleteSellerProfile ?? false;
+    } catch (e) {
+      debugPrint('Error checking seller profile: $e');
+      return false;
+    }
+  }
+  
   // PRODUCTS METHODS
   Future<List<Product>> getProducts() async {
     try {
       final response = await _client
           .from('products')
-          .select('*, seller:seller_id(username)')
+          .select('*, seller:seller_id(id, username, email, is_approved, phone_number, whatsapp_number, seller_bio, seller_rating, business_name, business_address)')
           .order('created_at', ascending: false);
       
       return response.map<Product>((item) {
+        // Use null-safe access and provide default values
+        final sellerId = item['seller_id'] as String? ?? '';
+        final sellerData = item['seller'] as Map<String, dynamic>?;
+        final sellerName = sellerData != null ? (sellerData['username'] as String? ?? 'Unknown Seller') : 'Unknown Seller';
+        final sellerEmail = sellerData != null ? sellerData['email'] as String? : null;
+        final sellerIsVerified = sellerData != null ? sellerData['is_approved'] as bool? ?? false : false;
+        
+        // Get seller rating from the database or use default
+        final sellerRating = sellerData != null && sellerData['seller_rating'] != null
+            ? (sellerData['seller_rating'] as num).toDouble()
+            : 4.5; // Default rating if not available
+        
+        // Get WhatsApp number for contact integration
+        final whatsappNumber = sellerData != null ? sellerData['whatsapp_number'] as String? : null;
+        final businessName = sellerData != null ? sellerData['business_name'] as String? : null;
+        
         return Product(
-          id: item['id'],
-          name: item['name'],
-          description: item['description'],
-          price: item['price'].toDouble(),
-          imageUrl: item['image_url'],
-          category: item['category'],
-          location: item['location'],
-          sellerId: item['seller_id'],
-          sellerName: item['seller']['username'],
+          id: item['id'] as String? ?? '',
+          name: item['name'] as String? ?? 'Unnamed Product',
+          description: item['description'] as String? ?? '',
+          price: item['price'] != null ? (item['price'] as num).toDouble() : 0.0,
+          imageUrl: item['image_url'] as String? ?? 'assets/images/placeholder.jpg',
+          category: item['category'] as String? ?? 'Uncategorized',
+          location: item['location'] as String? ?? 'Unknown Location',
+          sellerId: sellerId,
+          sellerName: businessName ?? sellerName, // Use business name if available
+          sellerEmail: sellerEmail,
+          sellerRating: sellerRating,
+          sellerIsVerified: sellerIsVerified,
+          sellerWhatsapp: whatsappNumber,
         );
       }).toList();
     } catch (e) {

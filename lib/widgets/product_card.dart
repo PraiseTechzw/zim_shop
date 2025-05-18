@@ -35,19 +35,34 @@ class ProductCard extends StatelessWidget {
                   aspectRatio: 1.3,
                   child: Container(
                     color: Colors.grey[300],
-                    child: Image.asset(
-                      product.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: Colors.grey[400],
-                          ),
-                        );
-                      },
-                    ),
+                    child: product.imageUrl.startsWith('http')
+                      ? Image.network(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint('Error loading product image: $error');
+                            return Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 40,
+                                color: Colors.grey[400],
+                              ),
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 40,
+                                color: Colors.grey[400],
+                              ),
+                            );
+                          },
+                        ),
                   ),
                 ),
                 // Gradient overlay
@@ -89,6 +104,31 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Verified seller badge
+                if (product.sellerIsVerified == true)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.verified_user,
+                        color: Colors.green,
+                        size: 16,
+                      ),
+                    ),
+                  ),
               ],
             ),
             
@@ -156,6 +196,47 @@ class ProductCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                  // Show seller name 
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: 12,
+                        color: theme.colorScheme.secondary.withOpacity(0.7),
+                      ),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          product.sellerName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.secondary,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Display rating if available
+                      if (product.sellerRating != null) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.star,
+                          size: 12,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.sellerRating!.toStringAsFixed(1),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.amber.shade800,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],

@@ -23,6 +23,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Product Details'),
@@ -39,19 +41,34 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
                 ),
-                child: Image.asset(
-                  widget.product.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 50,
-                        color: Colors.grey,
-                      ),
-                    );
-                  },
-                ),
+                child: widget.product.imageUrl.startsWith('http')
+                  ? Image.network(
+                      widget.product.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('Error loading product image: $error');
+                        return const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      widget.product.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    ),
               ),
             ),
             
@@ -84,22 +101,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   
                   const SizedBox(height: 8),
                   
-                  // Location and seller
+                  // Location
                   Row(
                     children: [
                       const Icon(Icons.location_on, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         widget.product.location,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(Icons.person, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Seller: ${widget.product.sellerName}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.secondary,
                         ),
@@ -121,6 +129,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     widget.product.description,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Seller information section
+                  _buildSellerInfoSection(theme),
                   
                   const SizedBox(height: 24),
                   
@@ -201,4 +214,182 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       ),
     );
   }
+  
+  Widget _buildSellerInfoSection(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Seller Information',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              // Show verification badge if seller is verified
+              if (widget.product.sellerIsVerified == true)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.verified,
+                        size: 14,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Verified',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Seller name
+          Row(
+            children: [
+              Icon(Icons.person, 
+                color: theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                widget.product.sellerName,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Seller email if available
+          if (widget.product.sellerEmail != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Icon(Icons.email, 
+                    color: theme.colorScheme.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.product.sellerEmail!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          
+          // Seller ID (for admin/reference purposes)
+          Row(
+            children: [
+              Icon(Icons.badge, 
+                color: theme.colorScheme.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'ID: ${widget.product.sellerId.substring(0, Math.min(8, widget.product.sellerId.length))}...',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Seller rating if available
+          if (widget.product.sellerRating != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Icon(Icons.star, 
+                    color: Colors.amber,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${widget.product.sellerRating!.toStringAsFixed(1)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  _buildRatingStars(widget.product.sellerRating!),
+                ],
+              ),
+            ),
+          
+          const SizedBox(height: 8),
+          
+          // Contact seller button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                // This would launch a chat or message screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Contact seller feature coming soon!'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chat_outlined),
+              label: const Text('Contact Seller'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Helper method to build rating stars
+  Widget _buildRatingStars(double rating) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < rating.floor()) {
+          // Full star
+          return Icon(Icons.star, color: Colors.amber, size: 14);
+        } else if (index < rating.ceil() && index > rating.floor()) {
+          // Half star
+          return Icon(Icons.star_half, color: Colors.amber, size: 14);
+        } else {
+          // Empty star
+          return Icon(Icons.star_border, color: Colors.amber, size: 14);
+        }
+      }),
+    );
+  }
+}
+
+// Helper class for math operations since we can't use dart:math directly in the widget tree
+class Math {
+  static int min(int a, int b) => a < b ? a : b;
 }

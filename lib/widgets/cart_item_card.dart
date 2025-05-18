@@ -31,7 +31,7 @@ class CartItemCard extends StatelessWidget {
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Image.asset(
+              child: Image.network(
                 cartItem.product.imageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {

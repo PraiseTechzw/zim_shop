@@ -8,6 +8,10 @@ class Product {
   final String location;
   final String sellerId;
   final String sellerName;
+  final String? sellerEmail;
+  final double? sellerRating;
+  final bool? sellerIsVerified;
+  final String? sellerWhatsapp;
   
   Product({
     required this.id,
@@ -19,6 +23,10 @@ class Product {
     required this.location,
     required this.sellerId,
     required this.sellerName,
+    this.sellerEmail,
+    this.sellerRating,
+    this.sellerIsVerified,
+    this.sellerWhatsapp,
   });
   
   Product copyWith({
@@ -31,6 +39,10 @@ class Product {
     String? location,
     String? sellerId,
     String? sellerName,
+    String? sellerEmail,
+    double? sellerRating,
+    bool? sellerIsVerified,
+    String? sellerWhatsapp,
   }) {
     return Product(
       id: id ?? this.id,
@@ -42,6 +54,10 @@ class Product {
       location: location ?? this.location,
       sellerId: sellerId ?? this.sellerId,
       sellerName: sellerName ?? this.sellerName,
+      sellerEmail: sellerEmail ?? this.sellerEmail,
+      sellerRating: sellerRating ?? this.sellerRating,
+      sellerIsVerified: sellerIsVerified ?? this.sellerIsVerified,
+      sellerWhatsapp: sellerWhatsapp ?? this.sellerWhatsapp,
     );
   }
 }

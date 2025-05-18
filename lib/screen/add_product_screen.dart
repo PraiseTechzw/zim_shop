@@ -335,6 +335,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                     ? DecorationImage(
                                         image: NetworkImage(_imageUrl!),
                                         fit: BoxFit.cover,
+                                        onError: (exception, stackTrace) {
+                                          debugPrint('Error loading image: $exception');
+                                          // Fallback to default placeholder on error
+                                          setState(() {
+                                            _imageUrl = 'assets/images/placeholder.jpg';
+                                          });
+                                        },
                                       )
                                     : null,
                           ),

@@ -9,7 +9,6 @@ import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
 import 'package:zim_shop/services/supabase_service.dart';
 import 'package:zim_shop/services/paynow_service.dart';
-import 'package:zim_shop/models/user.dart';
 
 // Paynow test integration credentials
 const String paynowIntegrationId = 'YOUR_PAYNOW_INTEGRATION_ID';
