@@ -121,6 +121,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  dio:
+    dependency: transitive
+    description:
+      name: dio
+      sha256: "253a18bbd4851fecba42f7343a1df3a9a4c1d31a2c1b37e221086b4fa8c8dbc9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.8.0+1"
+  dio_web_adapter:
+    dependency: transitive
+    description:
+      name: dio_web_adapter
+      sha256: "7586e476d70caecaf1686d21eee7247ea43ef5c345eab9e0cc3583ff13378d78"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   fake_async:
     dependency: transitive
     description:
@@ -400,6 +416,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.1+1"
+  intl:
+    dependency: transitive
+    description:
+      name: intl
+      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.0"
   js:
     dependency: transitive
     description:
@@ -440,6 +464,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  localregex:
+    dependency: transitive
+    description:
+      name: localregex
+      sha256: a58d6b44f5c61b27a2f2088f596fd04935df3695a17ceb39dc2f33d8d118bbff
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.7"
   matcher:
     dependency: transitive
     description:
@@ -544,6 +576,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
+  paynow:
+    dependency: "direct main"
+    description:
+      name: paynow
+      sha256: "240739780aa4d1a486b742b7dae9b524e515ff33913ed77b294bb8c68d990e4d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.2.0"
   platform:
     dependency: transitive
     description:
@@ -560,6 +600,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  pretty_dio_logger:
+    dependency: transitive
+    description:
+      name: pretty_dio_logger
+      sha256: "36f2101299786d567869493e2f5731de61ce130faa14679473b26905a92b6407"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   provider:
     dependency: "direct main"
     description:

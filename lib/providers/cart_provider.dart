@@ -5,6 +5,7 @@ import 'package:zim_shop/models/cart_item.dart';
 import 'package:zim_shop/models/order.dart';
 import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/services/firebase_service.dart';
+import 'package:zim_shop/screen/checkout/payment_screen.dart';
 
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
@@ -158,5 +159,14 @@ class CartProvider extends ChangeNotifier {
     } catch (e) {
       throw Exception('Checkout failed: $e');
     }
+  }
+  
+  // Navigate to payment screen
+  void proceedToPayment(BuildContext context, Order order) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(order: order),
+      ),
+    );
   }
 }
