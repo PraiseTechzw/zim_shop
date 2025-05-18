@@ -12,10 +12,7 @@ CREATE POLICY "Public products images are viewable by everyone" ON storage.objec
 CREATE POLICY "Product images can be uploaded by sellers" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'products' AND
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'seller' AND is_approved = TRUE
-    )
+    (auth.jwt() ->> 'role')::text = 'seller'
   );
 
 CREATE POLICY "Sellers can update their own product images" ON storage.objects
@@ -23,8 +20,7 @@ CREATE POLICY "Sellers can update their own product images" ON storage.objects
     bucket_id = 'products' AND
     EXISTS (
       SELECT 1 FROM public.products p
-      JOIN public.users u ON p.seller_id = u.id
-      WHERE p.image_url LIKE '%' || name AND u.id = auth.uid()
+      WHERE p.image_url LIKE '%' || name AND p.seller_id = auth.uid()
     )
   );
 
@@ -33,8 +29,7 @@ CREATE POLICY "Sellers can delete their own product images" ON storage.objects
     bucket_id = 'products' AND
     EXISTS (
       SELECT 1 FROM public.products p
-      JOIN public.users u ON p.seller_id = u.id
-      WHERE p.image_url LIKE '%' || name AND u.id = auth.uid()
+      WHERE p.image_url LIKE '%' || name AND p.seller_id = auth.uid()
     )
   );
 
@@ -106,12 +101,10 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own data" ON public.users
   FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
 CREATE POLICY "Admins can view all users" ON public.users
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
+    (auth.jwt() ->> 'role')::text = 'admin'
   );
 
 DROP POLICY IF EXISTS "Users can insert their own data" ON public.users;
@@ -124,20 +117,14 @@ CREATE POLICY "Anyone can view active products" ON public.products
 
 CREATE POLICY "Sellers can insert their own products" ON public.products
   FOR INSERT WITH CHECK (
-    auth.uid() = seller_id AND
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'seller' AND is_approved = TRUE
-    )
+    auth.uid() = seller_id AND 
+    (auth.jwt() ->> 'role')::text = 'seller'
   );
 
 CREATE POLICY "Sellers can update their own products" ON public.products
   FOR UPDATE USING (
-    auth.uid() = seller_id AND
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'seller' AND is_approved = TRUE
-    )
+    auth.uid() = seller_id AND 
+    (auth.jwt() ->> 'role')::text = 'seller'
   );
 
 -- Orders policies
@@ -156,13 +143,9 @@ CREATE POLICY "Sellers can view orders for their products" ON public.orders
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view all orders" ON public.orders;
 CREATE POLICY "Admins can view all orders" ON public.orders
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR SELECT USING ((auth.jwt() ->> 'role')::text = 'admin');
 
 -- Order items policies
 CREATE POLICY "Users can view their own order items" ON public.order_items

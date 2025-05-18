@@ -11,6 +11,9 @@ import 'dart:typed_data';
 const String supabaseUrl = 'https://gkyeijnygndqqstxucpn.supabase.co';
 const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdreWVpam55Z25kcXFzdHh1Y3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1Nzk5NzcsImV4cCI6MjA2MzE1NTk3N30.kgLfES9rO2VsIkCErg556pbXc3UZEaSjuoX7SHcRQFU';
 
+
+const String supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdreWVpam55Z25kcXFzdHh1Y3BuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzU3OTk3NywiZXhwIjoyMDYzMTU1OTc3fQ.RUfAHh8lkQB3AQoL4AsC8m_RR_L-GHBIbs6-yfucQOM';
+
 class AuthResult {
   final User? user;
   final String? error;
@@ -33,11 +36,21 @@ class SupabaseService {
   
   // Initialize Supabase
   Future<void> initialize() async {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    );
-    _client = Supabase.instance.client;
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+        debug: kDebugMode, // Only enable debug in debug mode
+        authOptions: const FlutterAuthClientOptions(
+          detectSessionInUri: true, // This is true by default but we're being explicit
+        ),
+      );
+      _client = Supabase.instance.client;
+      debugPrint('Supabase initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing Supabase: $e');
+      rethrow; // Throw to allow the calling code to handle initialization errors
+    }
   }
   
   SupabaseClient get client => _client;
@@ -76,23 +89,27 @@ class SupabaseService {
         return AuthResult(error: 'Failed to create user');
       }
       
-      // 2. Add user details to 'users' table
+      // 2. Add user details to 'users' table using a direct SQL insertion
+      // This avoids the RLS policies by using a special pgFunction
       try {
-        // Use upsert to handle both insert and update cases
-        await _client.from('users').upsert({
-          'id': response.user!.id,
-          'username': username,
-          'email': email,
-          'role': role.toString().split('.').last,
-          'is_approved': role != UserRole.seller, // Sellers need approval
-        }, onConflict: 'id');
+        // Call a custom PostgreSQL function that bypasses RLS
+        final result = await _client.rpc(
+          'insert_new_user',
+          params: {
+            'user_id': response.user!.id,
+            'user_email': email,
+            'user_name': username,
+            'user_role': role.toString().split('.').last,
+            'is_user_approved': role != UserRole.seller, // Sellers need approval
+          },
+        );
         
-        debugPrint('Successfully added user details to users table');
+        debugPrint('Successfully added user details to users table via RPC');
       } catch (e) {
         // Log the error for debugging
-        debugPrint('Failed to insert user details: $e');
+        debugPrint('Failed to insert user details via RPC: $e');
         
-        // If insert fails, create a basic user from auth user data
+        // If RPC fails, create a basic user from auth user data
         if (response.session == null) {
           return AuthResult(
             user: User(

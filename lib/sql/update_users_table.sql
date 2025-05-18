@@ -41,6 +41,12 @@ CREATE POLICY users_update_own ON users
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
+-- Policy for users to insert their own data during signup
+DROP POLICY IF EXISTS users_insert_own ON users;
+CREATE POLICY users_insert_own ON users
+  FOR INSERT
+  WITH CHECK (true);
+
 -- Policy for admin to view all data
 CREATE POLICY admin_view_all ON users
   FOR SELECT

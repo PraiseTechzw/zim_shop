@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
   List<User> _users = [];
   bool _isLoading = false;
   bool _isAuthenticated = false;
+  bool _isPasswordRecovery = false;
   
   final SupabaseService _supabaseService = SupabaseService();
 
@@ -36,6 +37,7 @@ class AppState extends ChangeNotifier {
   bool get isSeller => _currentUser?.role == UserRole.seller;
   bool get isSellerApproved => 
     _currentUser?.role == UserRole.seller && _currentUser?.isApproved == true;
+  bool get isPasswordRecovery => _isPasswordRecovery;
   
   // Check if seller profile is complete
   bool get isSellerProfileComplete => 
@@ -256,5 +258,11 @@ class AppState extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Set password recovery state
+  void setPasswordRecovery(bool value) {
+    _isPasswordRecovery = value;
+    notifyListeners();
   }
 }
