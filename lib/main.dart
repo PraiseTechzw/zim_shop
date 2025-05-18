@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:zim_shop/firebase_config.dart';
 import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/providers/theme_provider.dart';
@@ -9,18 +7,29 @@ import 'package:zim_shop/screen/auth/login_screen.dart';
 import 'package:zim_shop/screen/buyer_main_screen.dart';
 import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
+import 'package:zim_shop/services/supabase_service.dart';
+import 'package:zim_shop/services/paynow_service.dart';
+import 'package:zim_shop/models/user.dart';
+
+// Paynow test integration credentials
+const String paynowIntegrationId = 'YOUR_PAYNOW_INTEGRATION_ID';
+const String paynowIntegrationKey = 'YOUR_PAYNOW_INTEGRATION_KEY';
+const String paynowResultUrl = 'https://example.com/api/paynow/update';
+const String paynowReturnUrl = 'https://example.com/checkout/return';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Initialize Supabase
+  await SupabaseService().initialize();
   
-  // Initialize Firebase settings (persistence, cache size, etc.)
-  await FirebaseConfig.initializeSettings();
-  
-  // Seed initial data if needed (first run)
-  await FirebaseConfig.seedInitialData();
+  // Initialize Paynow
+  PaynowService(
+    integrationId: paynowIntegrationId,
+    integrationKey: paynowIntegrationKey,
+    resultUrl: paynowResultUrl,
+    returnUrl: paynowReturnUrl,
+  );
   
   runApp(
     MultiProvider(
@@ -59,62 +68,54 @@ class ZimMarketApp extends StatelessWidget {
         ),
       ),
       themeMode: themeProvider.themeMode,
-      home: const AuthWrapper(),
+      home: const AuthCheckWrapper(),
     );
   }
 }
 
-class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+class AuthCheckWrapper extends StatefulWidget {
+  const AuthCheckWrapper({Key? key}) : super(key: key);
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
+  State<AuthCheckWrapper> createState() => _AuthCheckWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isLoading = true;
+class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
+  bool _isChecking = true;
 
   @override
   void initState() {
     super.initState();
-    _checkAuthState();
+    _checkAuth();
   }
 
-  Future<void> _checkAuthState() async {
+  Future<void> _checkAuth() async {
     final appState = Provider.of<AppState>(context, listen: false);
-    await appState.checkCurrentUser();
-
-    if (appState.isLoggedIn) {
-      // If user is logged in, load the cart data
-      final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      await cartProvider.loadCart();
-    }
-
+    await appState.checkAuthState();
+    
     if (mounted) {
       setState(() {
-        _isLoading = false;
+        _isChecking = false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
+    if (_isChecking) {
+      return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          child: CircularProgressIndicator(),
         ),
       );
     }
-
+    
     final appState = Provider.of<AppState>(context);
     
     if (!appState.isLoggedIn) {
       return const LoginScreen();
     }
-
+    
     // Navigate based on user role
     switch (appState.currentRole) {
       case UserRole.buyer:
@@ -124,7 +125,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
       case UserRole.admin:
         return const AdminMainScreen();
       default:
-        // Fallback to login screen if role is not recognized
         return const LoginScreen();
     }
   }

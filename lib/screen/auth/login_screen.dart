@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zim_shop/providers/app_state.dart';
-import 'package:zim_shop/providers/cart_provider.dart';
-import 'package:zim_shop/screen/buyer_main_screen.dart';
-import 'package:zim_shop/screen/seller_main_screen.dart';
-import 'package:zim_shop/screen/admin_main_screen.dart';
 import 'package:zim_shop/screen/auth/register_screen.dart';
 import 'package:zim_shop/screen/auth/forgot_password_screen.dart';
 import 'package:zim_shop/widgets/theme_toggle_button.dart';
@@ -48,32 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Attempt login
       final appState = Provider.of<AppState>(context, listen: false);
-      final user = await appState.login(email, password);
+      await appState.login(email, password);
       
-      if (!mounted) return;
-      
-      // Load user's cart after successful login
-      final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      await cartProvider.loadCart();
-      
-      // Navigate based on user role
-      switch (user.role) {
-        case UserRole.buyer:
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const BuyerMainScreen()),
-          );
-          break;
-        case UserRole.seller:
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const SellerMainScreen()),
-          );
-          break;
-        case UserRole.admin:
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const AdminMainScreen()),
-          );
-          break;
-      }
+      // No need to navigate, AuthCheckWrapper will handle it automatically
     } on AuthException catch (e) {
       setState(() {
         _errorMessage = e.toString();

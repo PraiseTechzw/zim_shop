@@ -60,7 +60,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => OrderSuccessScreen(order: order),
+            builder: (_) => OrderSuccessScreen(order:  order),
           ),
         );
       }
