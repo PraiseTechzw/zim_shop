@@ -19,9 +19,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  UserRole _selectedRole = UserRole.buyer;
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -37,37 +37,52 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Mock authentication
-    final email = _emailController.text.trim();
-    final appState = Provider.of<AppState>(context, listen: false);
-    appState.login(email, _selectedRole);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Navigate based on selected role
-    switch (_selectedRole) {
-      case UserRole.buyer:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const BuyerMainScreen()),
-        );
-        break;
-      case UserRole.seller:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const SellerMainScreen()),
-        );
-        break;
-      case UserRole.admin:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminMainScreen()),
-        );
-        break;
+    try {
+      // Get user credentials
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      
+      // Attempt login
+      final appState = Provider.of<AppState>(context, listen: false);
+      final user = await appState.login(email, password);
+      
+      if (!mounted) return;
+      
+      // Navigate based on user role
+      switch (user.role) {
+        case UserRole.buyer:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const BuyerMainScreen()),
+          );
+          break;
+        case UserRole.seller:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const SellerMainScreen()),
+          );
+          break;
+        case UserRole.admin:
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminMainScreen()),
+          );
+          break;
+      }
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -121,7 +136,33 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Theme.of(context).colorScheme.secondary,
                   ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
+                if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -171,42 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
                     }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
                     return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<UserRole>(
-                  value: _selectedRole,
-                  decoration: InputDecoration(
-                    labelText: 'Login As',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.badge),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: UserRole.buyer,
-                      child: Text('Buyer'),
-                    ),
-                    DropdownMenuItem(
-                      value: UserRole.seller,
-                      child: Text('Seller'),
-                    ),
-                    DropdownMenuItem(
-                      value: UserRole.admin,
-                      child: Text('Admin'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedRole = value;
-                      });
-                    }
                   },
                 ),
                 Align(

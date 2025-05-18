@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
   bool _acceptTerms = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -48,22 +49,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Get user data
+      final username = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      
+      // Attempt registration
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.register(username, email, password, _selectedRole);
 
-    // Mock registration
-    final email = _emailController.text.trim();
-    final appState = Provider.of<AppState>(context, listen: false);
-    appState.login(email, _selectedRole);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Show success message and navigate back
-    if (mounted) {
+      if (!mounted) return;
+      
+      // Show success message and navigate back
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Registration successful! Please login.'),
@@ -71,6 +72,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
       Navigator.of(context).pop();
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -112,12 +127,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: Theme.of(context).colorScheme.secondary,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    hintText: 'Enter your full name',
+                    labelText: 'Username',
+                    hintText: 'Choose a username',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -125,7 +166,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return 'Please enter a username';
+                    }
+                    if (value.length < 3) {
+                      return 'Username must be at least 3 characters';
                     }
                     return null;
                   },
