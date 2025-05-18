@@ -51,27 +51,42 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
     }
   }
   
-  Future<void> _deleteProduct(String productId) async {
+  Future<void> _deleteProduct(String productId, String imageUrl) async {
     try {
       setState(() => _isLoading = true);
       
+      // First try to delete the product image from storage (if it's not a placeholder)
+      if (imageUrl.isNotEmpty && !imageUrl.contains('assets/images')) {
+        await _supabaseService.deleteProductImage(imageUrl);
+      }
+      
+      // Then delete the product record
       final success = await _supabaseService.deleteProduct(productId);
       
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product deleted successfully')),
+          const SnackBar(
+            content: Text('Product deleted successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         _loadProducts();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete product')),
+          const SnackBar(
+            content: Text('Failed to delete product'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint('Error deleting product: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       setState(() => _isLoading = false);
     }
@@ -188,7 +203,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                               FilledButton(
                                 onPressed: () {
                                   Navigator.of(context).pop();
-                                _deleteProduct(product.id);
+                                _deleteProduct(product.id, product.imageUrl);
                                 },
                                 child: const Text('Delete'),
                               ),
