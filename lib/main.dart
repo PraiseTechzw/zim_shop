@@ -62,11 +62,11 @@ void main() async {
     // Create the AppState provider that will be used throughout the app
     final appState = AppState();
     
+    // Wait for AppState to initialize
+    await appState.initialize();
+    
     // Setup custom deeplink handling with AppState
     setupDeeplinkHandling(appState);
-    
-    // Initialize AppState (which will initialize SupabaseService properly)
-    await appState.initialize();
     
     // Everything initialized successfully, start the app
     runApp(
@@ -280,11 +280,13 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
       
       // Make sure AppState is initialized
       if (!appState.isInitialized) {
+        debugPrint('AppState not initialized in AuthCheckWrapper, initializing now');
         await appState.initialize();
+      } else {
+        // If already initialized, just refresh auth state
+        debugPrint('AppState already initialized, refreshing auth state');
+        await appState.checkAuthState();
       }
-      
-      // Check authentication state
-      await appState.checkAuthState();
       
       if (mounted) {
         setState(() {
