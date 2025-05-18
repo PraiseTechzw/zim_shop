@@ -8,7 +8,6 @@ import 'package:zim_shop/widgets/dashboard_card.dart';
 import 'package:zim_shop/screen/add_product_screen.dart';
 import 'package:zim_shop/screen/seller_orders_screen.dart';
 import 'package:zim_shop/screen/seller_products_screen.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({Key? key}) : super(key: key);
