@@ -59,13 +59,23 @@ class AppState extends ChangeNotifier {
   // Initialize the AppState
   Future<void> initialize() async {
     try {
-      if (_isInitialized) return;
+      if (_isInitialized) {
+        debugPrint('AppState already initialized');
+        return;
+      }
       
-      await _supabaseService.initialize();
+      // Initialize SupabaseService if not already initialized
+      if (!_supabaseService.isInitialized) {
+        debugPrint('Initializing SupabaseService from AppState');
+        await _supabaseService.initialize();
+      }
+      
+      // Check authentication state
       await checkAuthState();
       
       _isInitialized = true;
       notifyListeners();
+      debugPrint('AppState initialized successfully');
     } catch (e) {
       _lastError = e.toString();
       debugPrint('Error initializing AppState: $_lastError');
@@ -79,8 +89,19 @@ class AppState extends ChangeNotifier {
       debugPrint('Checking auth state...');
       
       // Initialize service if needed
-      if (!_isInitialized) {
-        await _supabaseService.initialize();
+      if (!_isInitialized && !_supabaseService.isInitialized) {
+        debugPrint('SupabaseService not initialized, initializing now');
+        try {
+          await _supabaseService.initialize();
+        } catch (e) {
+          debugPrint('Error initializing SupabaseService: $e');
+          _lastError = 'Failed to initialize authentication: $e';
+          _isLoggedIn = false;
+          _isAuthenticated = false;
+          _currentUser = null;
+          notifyListeners();
+          return;
+        }
       }
       
       // Get current user from Supabase

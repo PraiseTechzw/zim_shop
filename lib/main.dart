@@ -327,23 +327,61 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
         });
       }
       
-      return const ResetPasswordScreen();
+      // Use named route navigation
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/reset-password');
+      });
+      
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     
     if (!appState.isLoggedIn) {
-      return const LoginScreen();
+      debugPrint("User not logged in, showing LoginScreen");
+      
+      // Use named route navigation
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      });
+      
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     
     // Navigate based on user role
-    switch (appState.currentRole) {
-      case UserRole.buyer:
-        return const BuyerMainScreen();
-      case UserRole.seller:
-        return const SellerMainScreen();
-      case UserRole.admin:
-        return const AdminMainScreen();
-      default:
-        return const LoginScreen();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      String route;
+      
+      switch (appState.currentRole) {
+        case UserRole.buyer:
+          route = '/buyer';
+          break;
+        case UserRole.seller:
+          route = '/seller';
+          break;
+        case UserRole.admin:
+          route = '/admin';
+          break;
+        default:
+          route = '/login';
+          break;
+      }
+      
+      debugPrint("User logged in as ${appState.currentRole}, navigating to $route");
+      Navigator.of(context).pushReplacementNamed(route);
+    });
+    
+    // Show loading screen while navigating
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
   }
 }

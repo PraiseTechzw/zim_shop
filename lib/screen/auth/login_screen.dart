@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         
         // Navigate back to AuthCheckWrapper which will route the user based on role
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        Navigator.of(context).pushReplacementNamed('/');
       } else {
         // Show error message from AppState
         setState(() {

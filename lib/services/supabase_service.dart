@@ -26,6 +26,7 @@ class AuthResult {
 
 class SupabaseService {
   late final SupabaseClient _client;
+  bool _isInitialized = false;
   
   // Singleton pattern
   static final SupabaseService _instance = SupabaseService._internal();
@@ -37,9 +38,15 @@ class SupabaseService {
   // Initialize Supabase
   Future<void> initialize() async {
     try {
-      // Instead of initializing Supabase, just get the existing client
-      // Supabase should already be initialized in main.dart
+      // Prevent double initialization
+      if (_isInitialized) {
+        debugPrint('SupabaseService already initialized');
+        return;
+      }
+      
+      // Get the existing client - Supabase should already be initialized in main.dart
       _client = Supabase.instance.client;
+      _isInitialized = true;
       debugPrint('SupabaseService initialized successfully');
     } catch (e) {
       debugPrint('Error initializing SupabaseService: $e');
@@ -49,8 +56,24 @@ class SupabaseService {
   
   SupabaseClient get client => _client;
   
+  bool get isInitialized => _isInitialized;
+  
   // Check if user is authenticated
   bool get isAuthenticated => _client.auth.currentUser != null;
+  
+  // Ensure client is initialized before performing operations
+  Future<bool> _ensureInitialized() async {
+    if (!_isInitialized) {
+      try {
+        await initialize();
+        return true;
+      } catch (e) {
+        debugPrint('Failed to initialize SupabaseService: $e');
+        return false;
+      }
+    }
+    return true;
+  }
   
   // Get current authenticated user
   Future<User?> getCurrentUser() async {
@@ -68,6 +91,10 @@ class SupabaseService {
     required String username, 
     required UserRole role
   }) async {
+    if (!_isInitialized) {
+      return AuthResult(error: 'SupabaseService not initialized');
+    }
+    
     try {
       // 1. Create auth user with role in user metadata
       final response = await _client.auth.signUp(
@@ -190,6 +217,10 @@ class SupabaseService {
   }
   
   Future<AuthResult> signIn({required String email, required String password}) async {
+    if (!_isInitialized) {
+      return AuthResult(error: 'SupabaseService not initialized');
+    }
+    
     try {
       final response = await _client.auth.signInWithPassword(
         email: email,
