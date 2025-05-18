@@ -89,10 +89,27 @@ class CartProvider extends ChangeNotifier {
         });
       }
       
+      // Load order items
+      final orderItemsResponse = await _supabaseService.client
+          .from('order_items')
+          .select('*, products(*)')
+          .eq('order_id', response['id']);
+      
+      final orderItems = orderItemsResponse.map((item) {
+        return CartItem(
+          product: Product.fromJson(item['products']),
+          quantity: item['quantity'] as int,
+        );
+      }).toList();
+      
+      // Create order with items
+      final order = Order.fromJson(response);
+      order.items.addAll(orderItems);
+      
       // Clear cart after successful order
       clear();
       
-      return Order.fromJson(response);
+      return order;
     } catch (e) {
       debugPrint('Error creating order: $e');
       return null;

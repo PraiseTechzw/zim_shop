@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/order_success_screen.dart';
@@ -314,29 +315,68 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(height: 16),
                         Card(
                           margin: EdgeInsets.zero,
-                          child: RadioListTile(
-                            title: Row(
-                              children: [
-                                const FaIcon(FontAwesomeIcons.moneyBill),
-                                const SizedBox(width: 8),
-                                const Text('PayNow'),
-                                const Spacer(),
-                                Image.asset(
-                                  'assets/images/paynow.png',
-                                  width: 60,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const FaIcon(FontAwesomeIcons.moneyBill, size: 30);
-                                  },
+                          child: Column(
+                            children: [
+                              RadioListTile(
+                                title: Row(
+                                  children: [
+                                    const FaIcon(FontAwesomeIcons.moneyBill),
+                                    const SizedBox(width: 8),
+                                    const Text('PayNow'),
+                                    const Spacer(),
+                                    SvgPicture.asset(
+                                      'assets/images/button_pay-now_large.svg',
+                                      width: 80,
+                                      height: 30,
+                                      placeholderBuilder: (context) => const FaIcon(
+                                        FontAwesomeIcons.moneyBill,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            value: 'PayNow',
-                            groupValue: _paymentMethod,
-                            onChanged: (value) {
-                              setState(() {
-                                _paymentMethod = value.toString();
-                              });
-                            },
+                                value: 'PayNow',
+                                groupValue: _paymentMethod,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _paymentMethod = value.toString();
+                                  });
+                                },
+                              ),
+                              if (_paymentMethod == 'PayNow')
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Divider(),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const FaIcon(
+                                            FontAwesomeIcons.shieldHalved,
+                                            size: 16,
+                                            color: Colors.green,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Secure Payment',
+                                            style: theme.textTheme.bodyMedium?.copyWith(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'PayNow is Zimbabwe\'s leading payment gateway',
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         
@@ -354,10 +394,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const FaIcon(FontAwesomeIcons.moneyBill),
+                              : SvgPicture.asset(
+                                  'assets/images/button_pay-now_large.svg',
+                                  width: 24,
+                                  height: 24,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
                           label: Text(_isProcessing ? 'Processing...' : 'Pay with PayNow'),
                           style: FilledButton.styleFrom(
                             minimumSize: const Size(double.infinity, 56),
+                            backgroundColor: const Color(0xFF00A0DC), // PayNow blue
                           ),
                         ),
                         

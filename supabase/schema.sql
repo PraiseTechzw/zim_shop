@@ -65,6 +65,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
   total_amount DECIMAL(10, 2) NOT NULL,
   payment_id TEXT,
   payment_method TEXT,
+  shipping_name TEXT,
+  shipping_email TEXT,
+  shipping_phone TEXT,
+  shipping_address TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
