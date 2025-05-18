@@ -6,10 +6,36 @@ import 'package:zim_shop/providers/app_state.dart';
 
 class MockData {
   static final List<User> users = [
-    User(id: 1, username: 'buyer1', role: UserRole.buyer),
-    User(id: 2, username: 'seller1', role: UserRole.seller, isApproved: true),
-    User(id: 3, username: 'admin', role: UserRole.admin),
-    User(id: 4, username: 'seller2', role: UserRole.seller, isApproved: false),
+    User(
+      id: 1, 
+      username: 'buyer1', 
+      email: 'buyer1@example.com',
+      password: 'password123',
+      role: UserRole.buyer
+    ),
+    User(
+      id: 2, 
+      username: 'seller1', 
+      email: 'seller1@example.com',
+      password: 'password123',
+      role: UserRole.seller, 
+      isApproved: true
+    ),
+    User(
+      id: 3, 
+      username: 'admin', 
+      email: 'admin@example.com',
+      password: 'admin123',
+      role: UserRole.admin
+    ),
+    User(
+      id: 4, 
+      username: 'seller2', 
+      email: 'seller2@example.com',
+      password: 'password123',
+      role: UserRole.seller, 
+      isApproved: false
+    ),
   ];
 
   static final List<Product> products = [
