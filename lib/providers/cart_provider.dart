@@ -57,6 +57,10 @@ class CartProvider extends ChangeNotifier {
   
   Future<Order?> checkout(String userId, {Map<String, String>? shippingInfo}) async {
     try {
+      debugPrint('Starting checkout process...');
+      debugPrint('User ID: $userId');
+      debugPrint('Shipping Info: $shippingInfo');
+      
       // Create order in Supabase
       final orderData = {
         'user_id': userId,
@@ -69,24 +73,31 @@ class CartProvider extends ChangeNotifier {
         'created_at': DateTime.now().toIso8601String(),
       };
       
+      debugPrint('Order Data: $orderData');
+      
       final response = await _supabaseService.client
           .from('orders')
           .insert(orderData)
           .select()
           .single();
       
+      debugPrint('Order Response: $response');
+      
       if (response == null) {
-        return null;
+        throw Exception('Failed to create order: No response from server');
       }
       
       // Create order items
       for (final item in items) {
-        await _supabaseService.client.from('order_items').insert({
+        final itemData = {
           'order_id': response['id'],
           'product_id': item.product.id,
           'quantity': item.quantity,
           'price': item.product.price,
-        });
+        };
+        debugPrint('Creating order item: $itemData');
+        
+        await _supabaseService.client.from('order_items').insert(itemData);
       }
       
       // Load order items
@@ -95,12 +106,31 @@ class CartProvider extends ChangeNotifier {
           .select('*, products(*)')
           .eq('order_id', response['id']);
       
-      final orderItems = orderItemsResponse.map((item) {
-        return CartItem(
-          product: Product.fromJson(item['products'] as Map<String, dynamic>),
-          quantity: item['quantity'] as int,
-        );
-      }).toList();
+      debugPrint('Order Items Response: $orderItemsResponse');
+      
+      if (orderItemsResponse == null) {
+        throw Exception('Failed to load order items');
+      }
+
+      final List<CartItem> orderItems = [];
+      for (final item in orderItemsResponse) {
+        final productData = item['products'];
+        if (productData == null) {
+          debugPrint('Warning: Product data is null for order item: $item');
+          continue;
+        }
+        
+        try {
+          final cartItem = CartItem(
+            product: Product.fromJson(productData as Map<String, dynamic>),
+            quantity: item['quantity'] as int,
+          );
+          orderItems.add(cartItem);
+        } catch (e) {
+          debugPrint('Error processing order item: $e');
+          debugPrint('Item data: $item');
+        }
+      }
       
       // Create order with items
       final order = Order(
@@ -110,18 +140,21 @@ class CartProvider extends ChangeNotifier {
         totalAmount: (response['total_amount'] as num).toDouble(),
         date: DateTime.parse(response['created_at'] as String),
         status: response['status'] as String,
-        shippingName: response['shipping_name'] as String?,
-        shippingAddress: response['shipping_address'] as String?,
-        shippingPhone: response['shipping_phone'] as String?,
-        shippingEmail: response['shipping_email'] as String?,
+        shippingName: response['shipping_name'] as String? ?? '',
+        shippingAddress: response['shipping_address'] as String? ?? '',
+        shippingPhone: response['shipping_phone'] as String? ?? '',
+        shippingEmail: response['shipping_email'] as String? ?? '',
       );
+      
+      debugPrint('Created Order: ${order.toJson()}');
       
       // Clear cart after successful order
       clear();
       
       return order;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error creating order: $e');
+      debugPrint('Stack trace: $stackTrace');
       return null;
     }
   }

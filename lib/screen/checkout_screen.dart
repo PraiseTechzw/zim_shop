@@ -6,6 +6,7 @@ import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/order_success_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:zim_shop/screen/paynow_payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -20,6 +21,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _postalCodeController = TextEditingController();
   String _paymentMethod = 'PayNow';
   bool _isProcessing = false;
   
@@ -29,6 +32,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _addressController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _cityController.dispose();
+    _postalCodeController.dispose();
     super.dispose();
   }
   
@@ -42,68 +47,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
     
     try {
-      final cartProvider = Provider.of<CartProvider>(context, listen: false);
-      final appState = Provider.of<AppState>(context, listen: false);
-      
-      if (appState.currentUser == null) {
-        throw Exception('User not logged in');
-      }
-      
-      // Create order
-      final order = await cartProvider.checkout(
-        appState.currentUser!.id,
-        shippingInfo: {
-          'name': _nameController.text,
-          'address': _addressController.text,
-          'phone': _phoneController.text,
-          'email': _emailController.text,
-        },
-      );
-      
-      if (order == null) {
-        throw Exception('Failed to create order');
-      }
-      
-      // Format PayNow URL with order details
-      final paynowUrl = Uri(
-        scheme: 'https',
-        host: 'paynow.co.zw',
-        path: '/payment/process',
-        queryParameters: {
-          'amount': order.totalAmount.toString(),
-          'reference': order.id,
-          'email': _emailController.text,
-          'name': _nameController.text,
-          'phone': _phoneController.text,
-        },
+      // Create order with shipping information
+      final order = await context.read<CartProvider>().checkout(
+            name: _nameController.text,
+            email: _emailController.text,
+            phone: _phoneController.text,
+            address: _addressController.text,
+            city: _cityController.text,
+            postalCode: _postalCodeController.text,
+          );
+
+      if (!mounted) return;
+
+      // Navigate to PayNow payment screen
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PayNowPaymentScreen(
+            order: order,
+            name: _nameController.text,
+            email: _emailController.text,
+            phone: _phoneController.text,
+          ),
+        ),
       );
 
-      if (await canLaunchUrl(paynowUrl)) {
-        await launchUrl(
-          paynowUrl,
-          mode: LaunchMode.externalApplication,
-        );
-        
-        // Navigate to success screen
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => OrderSuccessScreen(order: order),
-            ),
-          );
-        }
-      } else {
-        throw Exception('Could not launch PayNow');
-      }
+      // Clear cart after successful payment
+      if (!mounted) return;
+      context.read<CartProvider>().clearCart();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error processing payment: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -305,6 +283,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             return null;
                           },
                         ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _cityController,
+                          decoration: const InputDecoration(
+                            labelText: 'City',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
                         
                         const SizedBox(height: 24),
                         
