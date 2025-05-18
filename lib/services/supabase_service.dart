@@ -37,18 +37,12 @@ class SupabaseService {
   // Initialize Supabase
   Future<void> initialize() async {
     try {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
-        debug: kDebugMode, // Only enable debug in debug mode
-        authOptions: const FlutterAuthClientOptions(
-          detectSessionInUri: true, // This is true by default but we're being explicit
-        ),
-      );
+      // Instead of initializing Supabase, just get the existing client
+      // Supabase should already be initialized in main.dart
       _client = Supabase.instance.client;
-      debugPrint('Supabase initialized successfully');
+      debugPrint('SupabaseService initialized successfully');
     } catch (e) {
-      debugPrint('Error initializing Supabase: $e');
+      debugPrint('Error initializing SupabaseService: $e');
       rethrow; // Throw to allow the calling code to handle initialization errors
     }
   }

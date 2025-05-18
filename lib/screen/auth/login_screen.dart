@@ -44,26 +44,26 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Attempt login
       final appState = Provider.of<AppState>(context, listen: false);
-      final result = await appState.login(email, password);
+      final success = await appState.login(email, password);
       
       if (!mounted) return;
       
-      if (result['success']) {
+      if (success) {
         // Show success feedback
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message']),
+          const SnackBar(
+            content: Text('Login successful!'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
         );
         
-        // Navigate to the appropriate page based on role
-        Navigator.of(context).pushReplacementNamed(result['route']);
+        // Navigate back to AuthCheckWrapper which will route the user based on role
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       } else {
-        // Show error message
+        // Show error message from AppState
         setState(() {
-          _errorMessage = result['message'];
+          _errorMessage = appState.lastError ?? 'Login failed. Please try again.';
         });
       }
     } catch (e) {

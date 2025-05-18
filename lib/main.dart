@@ -14,11 +14,26 @@ import 'package:zim_shop/services/supabase_service.dart';
 import 'package:zim_shop/services/paynow_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Supabase configuration constants
+// These need to match the ones in SupabaseService
+const String supabaseUrl = 'https://gkyeijnygndqqstxucpn.supabase.co';
+const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdreWVpam55Z25kcXFzdHh1Y3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1Nzk5NzcsImV4cCI6MjA2MzE1NTk3N30.kgLfES9rO2VsIkCErg556pbXc3UZEaSjuoX7SHcRQFU';
+
 // Paynow test integration credentials
-const String paynowIntegrationId = 'YOUR_PAYNOW_INTEGRATION_ID';
-const String paynowIntegrationKey = 'YOUR_PAYNOW_INTEGRATION_KEY';
+const String paynowIntegrationId = ' 20889';
+const String paynowIntegrationKey = ' 00e58958-d6a8-4a0a-84ed-bf0b3bc322f2';
 const String paynowResultUrl = 'https://example.com/api/paynow/update';
 const String paynowReturnUrl = 'https://example.com/checkout/return';
+
+// Global navigator key to access context from anywhere
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Global flag to track if a password recovery flow is pending
+// This is used when the app is still initializing
+bool _isPasswordRecoveryPending = false;
+
+// Track if the app is already handling a deep link
+bool _isHandlingDeepLink = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,14 +59,20 @@ void main() async {
       returnUrl: paynowReturnUrl,
     );
     
-    // Set up custom deeplink handling
-    setupDeeplinkHandling();
+    // Create the AppState provider that will be used throughout the app
+    final appState = AppState();
+    
+    // Setup custom deeplink handling with AppState
+    setupDeeplinkHandling(appState);
+    
+    // Initialize AppState (which will initialize SupabaseService properly)
+    await appState.initialize();
     
     // Everything initialized successfully, start the app
     runApp(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => AppState()),
+          ChangeNotifierProvider.value(value: appState),
           ChangeNotifierProvider(create: (_) => CartProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ],
@@ -98,71 +119,94 @@ void main() async {
 }
 
 // Sets up custom deep link handling
-void setupDeeplinkHandling() {
+void setupDeeplinkHandling(AppState appState) {
   final appLinks = AppLinks();
   
   // Listen for initial links - this includes the app being opened with a link
+  // Using catchError to ensure we don't crash if there's an issue
   appLinks.getInitialLink().then((uri) {
     if (uri != null) {
-      handleDeepLink(uri);
+      debugPrint('Got initial deep link: $uri');
+      handleDeepLink(uri, appState);
     }
+  }).catchError((error) {
+    debugPrint('Error getting initial deep link: $error');
   });
   
   // Listen for links when app is already running
   appLinks.uriLinkStream.listen((uri) {
-    handleDeepLink(uri);
+    debugPrint('Got deep link from stream: $uri');
+    handleDeepLink(uri, appState);
   }, onError: (error) {
     debugPrint('Error receiving deep link: $error');
   });
 }
 
 // Handle the deeplink and process authentication flows
-Future<void> handleDeepLink(Uri uri) async {
-  final supabase = Supabase.instance.client;
-  
+Future<void> handleDeepLink(Uri uri, AppState appState) async {
   try {
-    debugPrint('Received deeplink: $uri');
+    // Prevent multiple simultaneous handling of the same deep link
+    if (_isHandlingDeepLink) {
+      debugPrint('Already handling a deep link, ignoring: $uri');
+      return;
+    }
+    
+    _isHandlingDeepLink = true;
+    debugPrint('Handling deeplink: $uri');
+    
+    final supabase = Supabase.instance.client;
     
     // Check if it's an auth link by looking for the 'code' parameter
     if (uri.queryParameters.containsKey('code')) {
       // Process the auth link
-      final response = await supabase.auth.getSessionFromUrl(uri);
-      
-      // Check if this is a password recovery flow
-      // This can be detected by examining the URI or checking the response
-      final isPasswordRecovery = uri.fragment.contains('type=recovery') || 
+      try {
+        final response = await supabase.auth.getSessionFromUrl(uri);
+        debugPrint('Successfully processed auth URL: $uri');
+        
+        // Check if this is a password recovery flow
+        final isPasswordRecovery = uri.fragment.contains('type=recovery') || 
                                uri.toString().contains('type=recovery');
-      
-      if (isPasswordRecovery) {
-        debugPrint('Detected password recovery flow');
         
-        // Get the AppState instance and set password recovery state
-        // This will notify all listeners about the password recovery
-        final navigatorKey = GlobalKey<NavigatorState>();
-        final context = navigatorKey.currentContext;
-        
-        if (context != null) {
-          // Use the context to access the provider
-          Provider.of<AppState>(context, listen: false).setPasswordRecovery(true);
-        } else {
-          // Fallback if context is not available
-          // Wait for the app to initialize and then set the state
+        if (isPasswordRecovery) {
+          debugPrint('Detected password recovery flow');
+          
+          // Set global flag and update AppState
+          _isPasswordRecoveryPending = true;
+          
+          // Update AppState if possible
+          try {
+            appState.setPasswordRecovery(true);
+            debugPrint('Successfully set password recovery state in AppState');
+          } catch (e) {
+            debugPrint('Error setting password recovery state in AppState: $e');
+          }
+          
+          // Also try to use the navigator if available
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final context = navigatorKey.currentContext;
             if (context != null) {
-              Provider.of<AppState>(context, listen: false).setPasswordRecovery(true);
+              debugPrint('Navigating to ResetPasswordScreen using Navigator');
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
+              );
+            } else {
+              debugPrint('Context not available for navigation');
             }
           });
+        } else {
+          // Normal sign-in flow, refresh the user state
+          await appState.checkAuthState();
         }
+      } catch (e) {
+        debugPrint('Error processing auth URL: $e');
       }
     }
   } catch (e) {
     debugPrint('Error handling deeplink: $e');
+  } finally {
+    _isHandlingDeepLink = false;
   }
 }
-
-// Global navigator key to access context from anywhere
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class ZimMarketApp extends StatelessWidget {
   final GlobalKey<NavigatorState> navigatorKey;
@@ -195,7 +239,21 @@ class ZimMarketApp extends StatelessWidget {
         ),
       ),
       themeMode: themeProvider.themeMode,
-      home: const AuthCheckWrapper(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) {
+          // Use a unique key based on login state to force rebuild when login state changes
+          final appState = Provider.of<AppState>(context);
+          return AuthCheckWrapper(
+            key: ValueKey('auth_check_${appState.isLoggedIn}_${appState.currentRole}'),
+          );
+        },
+        '/login': (context) => const LoginScreen(),
+        '/reset-password': (context) => const ResetPasswordScreen(),
+        '/buyer': (context) => const BuyerMainScreen(),
+        '/seller': (context) => const SellerMainScreen(),
+        '/admin': (context) => const AdminMainScreen(),
+      },
     );
   }
 }
@@ -209,7 +267,7 @@ class AuthCheckWrapper extends StatefulWidget {
 
 class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
   bool _isChecking = true;
-
+  
   @override
   void initState() {
     super.initState();
@@ -217,13 +275,29 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
   }
 
   Future<void> _checkAuth() async {
-    final appState = Provider.of<AppState>(context, listen: false);
-    await appState.checkAuthState();
-    
-    if (mounted) {
-      setState(() {
-        _isChecking = false;
-      });
+    try {
+      final appState = Provider.of<AppState>(context, listen: false);
+      
+      // Make sure AppState is initialized
+      if (!appState.isInitialized) {
+        await appState.initialize();
+      }
+      
+      // Check authentication state
+      await appState.checkAuthState();
+      
+      if (mounted) {
+        setState(() {
+          _isChecking = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error in AuthCheckWrapper: $e');
+      if (mounted) {
+        setState(() {
+          _isChecking = false;
+        });
+      }
     }
   }
 
@@ -239,8 +313,20 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
     
     final appState = Provider.of<AppState>(context);
     
-    // If password recovery is detected, show the reset password screen
-    if (appState.isPasswordRecovery) {
+    // If password recovery is detected from either the app state or the global flag
+    if (appState.isPasswordRecovery || _isPasswordRecoveryPending) {
+      debugPrint("Showing ResetPasswordScreen due to password recovery flag");
+      
+      // Clear the global flag since we're now handling it
+      _isPasswordRecoveryPending = false;
+      
+      // If not already set in the app state, set it now
+      if (!appState.isPasswordRecovery) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          appState.setPasswordRecovery(true);
+        });
+      }
+      
       return const ResetPasswordScreen();
     }
     

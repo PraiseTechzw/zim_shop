@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:zim_shop/models/user.dart';
 import 'package:zim_shop/services/supabase_service.dart';
 
@@ -20,6 +21,8 @@ class AppState extends ChangeNotifier {
   bool _isLoading = false;
   bool _isAuthenticated = false;
   bool _isPasswordRecovery = false;
+  String? _lastError;
+  bool _isInitialized = false;
   
   final SupabaseService _supabaseService = SupabaseService();
 
@@ -38,6 +41,8 @@ class AppState extends ChangeNotifier {
   bool get isSellerApproved => 
     _currentUser?.role == UserRole.seller && _currentUser?.isApproved == true;
   bool get isPasswordRecovery => _isPasswordRecovery;
+  String? get lastError => _lastError;
+  bool get isInitialized => _isInitialized;
   
   // Check if seller profile is complete
   bool get isSellerProfileComplete => 
@@ -51,63 +56,96 @@ class AppState extends ChangeNotifier {
     return _users;
   }
 
-  // Login with email and password
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  // Initialize the AppState
+  Future<void> initialize() async {
     try {
+      if (_isInitialized) return;
+      
+      await _supabaseService.initialize();
+      await checkAuthState();
+      
+      _isInitialized = true;
+      notifyListeners();
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('Error initializing AppState: $_lastError');
+      notifyListeners();
+    }
+  }
+
+  // Method to check if the current user is authenticated on app start
+  Future<void> checkAuthState() async {
+    try {
+      debugPrint('Checking auth state...');
+      
+      // Initialize service if needed
+      if (!_isInitialized) {
+        await _supabaseService.initialize();
+      }
+      
+      // Get current user from Supabase
+      final user = await _supabaseService.getCurrentUser();
+      
+      if (user != null) {
+        debugPrint('User is logged in: ${user.email}');
+        _currentUser = user;
+        _isLoggedIn = true;
+        _currentRole = user.role;
+        
+        // If user is admin, fetch users
+        if (_currentRole == UserRole.admin) {
+          await getUsers();
+        }
+      } else {
+        debugPrint('No user is logged in');
+        _isLoggedIn = false;
+        _currentUser = null;
+        _currentRole = UserRole.buyer;
+      }
+      
+      _isAuthenticated = _currentUser != null;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('Error checking auth state: $_lastError');
+      _isLoggedIn = false;
+      _isAuthenticated = false;
+      _currentUser = null;
+      notifyListeners();
+    }
+  }
+
+  // Login method with improved error handling
+  Future<bool> login(String email, String password) async {
+    try {
+      debugPrint('Attempting login for: $email');
+      
       final result = await _supabaseService.signIn(
         email: email,
         password: password,
       );
       
-      if (result.error != null) {
-        return {
-          'success': false,
-          'message': result.error!,
-          'user': null,
-        };
+      if (result.success && result.user != null) {
+        _currentUser = result.user;
+        _isLoggedIn = true;
+        _currentRole = result.user!.role;
+        _lastError = null;
+        
+        debugPrint('Login successful for: $email with role: ${result.user!.role}');
+        notifyListeners();
+        return true;
+      } else {
+        _lastError = result.error ?? 'Login failed';
+        debugPrint('Login failed: $_lastError');
+        notifyListeners();
+        return false;
       }
-      
-      if (result.user == null) {
-        return {
-          'success': false,
-          'message': 'Invalid email or password. Please try again.',
-          'user': null,
-        };
-      }
-      
-      _currentUser = result.user;
-      _currentRole = result.user!.role;
-      _isLoggedIn = true;
-      
-      // Determine route based on user role
-      String route;
-      switch (_currentRole) {
-        case UserRole.admin:
-          route = '/admin';
-          break;
-        case UserRole.seller:
-          route = '/seller';
-          break;
-        case UserRole.buyer:
-        default:
-          route = '/home';
-          break;
-      }
-      
-      notifyListeners();
-      
-      return {
-        'success': true,
-        'message': 'Login successful!',
-        'user': result.user,
-        'route': route,
-      };
     } catch (e) {
-      return {
-        'success': false,
-        'message': e is AuthException ? e.message : 'Login failed. Please try again.',
-        'user': null,
-      };
+      _lastError = e.toString();
+      debugPrint('Exception during login: $_lastError');
+      notifyListeners();
+      return false;
     }
   }
 
@@ -167,11 +205,22 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Logout with improved error handling
   Future<void> logout() async {
-    await _supabaseService.signOut();
-    _isLoggedIn = false;
-    _currentUser = null;
-    notifyListeners();
+    try {
+      await _supabaseService.signOut();
+      _isLoggedIn = false;
+      _currentUser = null;
+      _currentRole = UserRole.buyer;
+      _lastError = null;
+      
+      debugPrint('User logged out successfully');
+      notifyListeners();
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('Error during logout: $_lastError');
+      notifyListeners();
+    }
   }
 
   Future<bool> approveUser(String userId, bool isApproved) async {
@@ -186,25 +235,6 @@ class AppState extends ChangeNotifier {
     }
   }
   
-  // Method to check if the current user is authenticated on app start
-  Future<void> checkAuthState() async {
-    if (_supabaseService.isAuthenticated) {
-      final user = await _supabaseService.getCurrentUser();
-      if (user != null) {
-        _currentUser = user;
-        _currentRole = user.role;
-        _isLoggedIn = true;
-        
-        // If user is admin, fetch users
-        if (_currentRole == UserRole.admin) {
-          await getUsers();
-        }
-        
-        notifyListeners();
-      }
-    }
-  }
-
   // Update current user
   void updateCurrentUser(User user) {
     _currentUser = user;
@@ -263,6 +293,18 @@ class AppState extends ChangeNotifier {
   // Set password recovery state
   void setPasswordRecovery(bool value) {
     _isPasswordRecovery = value;
+    debugPrint('Password recovery state set to: $value');
     notifyListeners();
+  }
+
+  Future<bool> resetPassword(String email) async {
+    try {
+      final result = await _supabaseService.resetPassword(email);
+      return result;
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('Error resetting password: $_lastError');
+      return false;
+    }
   }
 }
