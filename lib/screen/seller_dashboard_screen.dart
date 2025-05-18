@@ -7,6 +7,7 @@ import 'package:zim_shop/services/supabase_service.dart';
 import 'package:zim_shop/screen/add_product_screen.dart';
 import 'package:zim_shop/screen/seller_orders_screen.dart';
 import 'package:zim_shop/screen/seller_products_screen.dart';
+import 'package:zim_shop/screen/seller_onboarding_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({Key? key}) : super(key: key);
@@ -112,6 +113,63 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Optional profile completion banner
+            if (!appState.isSellerProfileComplete)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.orange),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Complete your profile',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange[800],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Add your business details to enhance your seller profile',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => SellerOnboardingScreen(
+                              user: appState.currentUser!,
+                              onCompleted: () {
+                                appState.refreshUser().then((_) {
+                                  setState(() {});
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('COMPLETE'),
+                    ),
+                  ],
+                ),
+              ),
+            
             // Header section with welcome and profile info
             Container(
               padding: const EdgeInsets.all(20),
