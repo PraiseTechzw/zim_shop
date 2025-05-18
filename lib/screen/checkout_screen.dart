@@ -64,8 +64,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         throw Exception('Failed to create order');
       }
       
-      // Launch PayNow payment
-      final paynowUrl = Uri.parse('https://paynow.co.zw/payment/process');
+      // Format PayNow URL with order details
+      final paynowUrl = Uri(
+        scheme: 'https',
+        host: 'paynow.co.zw',
+        path: '/payment/process',
+        queryParameters: {
+          'amount': order.totalAmount.toString(),
+          'reference': order.id,
+          'email': _emailController.text,
+          'name': _nameController.text,
+          'phone': _phoneController.text,
+        },
+      );
+
       if (await canLaunchUrl(paynowUrl)) {
         await launchUrl(
           paynowUrl,
