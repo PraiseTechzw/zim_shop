@@ -97,14 +97,24 @@ class CartProvider extends ChangeNotifier {
       
       final orderItems = orderItemsResponse.map((item) {
         return CartItem(
-          product: Product.fromJson(item['products']),
+          product: Product.fromJson(item['products'] as Map<String, dynamic>),
           quantity: item['quantity'] as int,
         );
       }).toList();
       
       // Create order with items
-      final order = Order.fromJson(response);
-      order.items.addAll(orderItems);
+      final order = Order(
+        id: response['id'] as String,
+        userId: response['user_id'] as String,
+        items: orderItems,
+        totalAmount: (response['total_amount'] as num).toDouble(),
+        date: DateTime.parse(response['created_at'] as String),
+        status: response['status'] as String,
+        shippingName: response['shipping_name'] as String?,
+        shippingAddress: response['shipping_address'] as String?,
+        shippingPhone: response['shipping_phone'] as String?,
+        shippingEmail: response['shipping_email'] as String?,
+      );
       
       // Clear cart after successful order
       clear();
