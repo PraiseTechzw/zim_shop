@@ -27,7 +27,10 @@ class AppState extends ChangeNotifier {
   final SupabaseService _supabaseService = SupabaseService();
 
   AppState() {
-    _checkCurrentUser();
+    // Defer initialization to avoid race conditions
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initialize();
+    });
   }
 
   UserRole get currentRole => _currentRole;
