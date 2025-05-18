@@ -85,15 +85,15 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     return RefreshIndicator(
       onRefresh: _loadOrders,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
         itemCount: _sellerOrders.length,
-        itemBuilder: (context, index) {
+      itemBuilder: (context, index) {
           final order = _sellerOrders[index];
-          return OrderCard(
-            order: order,
-            isSellerView: true,
-          );
-        },
+        return OrderCard(
+          order: order,
+          isSellerView: true,
+        );
+      },
       ),
     );
   }

@@ -114,8 +114,9 @@ CREATE POLICY "Admins can view all users" ON public.users
     )
   );
 
-CREATE POLICY "Users can insert their own data" ON public.users
-  FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can insert their own data" ON public.users;
+CREATE POLICY "Allow insert during signup" ON public.users
+  FOR INSERT WITH CHECK (true);
 
 -- Products policies
 CREATE POLICY "Anyone can view active products" ON public.products

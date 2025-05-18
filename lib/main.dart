@@ -107,7 +107,7 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
         body: Center(
           child: CircularProgressIndicator(),
         ),
-      );
+    );
     }
     
     final appState = Provider.of<AppState>(context);

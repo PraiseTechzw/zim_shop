@@ -49,20 +49,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
     
     // Simulate payment processing
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () async {
       Navigator.of(context).pop(); // Close loading dialog
       
       final appState = Provider.of<AppState>(context, listen: false);
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
       
       if (appState.currentUser != null) {
-        final order = cartProvider.checkout(appState.currentUser!.id);
+        final order = await cartProvider.checkout(appState.currentUser!.id);
         
+        if (order != null) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => OrderSuccessScreen(order:  order),
+              builder: (_) => OrderSuccessScreen(order: order),
           ),
         );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to create order. Please try again.')),
+          );
+        }
       }
     });
   }

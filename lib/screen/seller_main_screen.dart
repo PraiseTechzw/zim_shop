@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zim_shop/providers/app_state.dart';
-import 'package:zim_shop/screen/login_screen.dart';
+import 'package:zim_shop/screen/auth/login_screen.dart';
 import 'package:zim_shop/screen/seller_profile_screen.dart';
 import 'package:zim_shop/widgets/theme_toggle_button.dart';
 import 'package:zim_shop/screen/seller_dashboard_screen.dart';

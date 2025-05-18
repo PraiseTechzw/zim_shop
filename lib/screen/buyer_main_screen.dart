@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zim_shop/providers/app_state.dart';
+import 'package:zim_shop/screen/auth/login_screen.dart';
 import 'package:zim_shop/screen/buyer_home_screen.dart';
 import 'package:zim_shop/screen/cart_screen.dart';
 import 'package:zim_shop/screen/orders_screen.dart';
 import 'package:zim_shop/screen/profile_screen.dart';
-import 'package:zim_shop/screen/login_screen.dart';
 
 import 'package:zim_shop/widgets/theme_toggle_button.dart';
 

@@ -14,8 +14,9 @@ const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 class AuthResult {
   final User? user;
   final String? error;
+  final bool requiresEmailConfirmation;
   
-  AuthResult({this.user, this.error});
+  AuthResult({this.user, this.error, this.requiresEmailConfirmation = false});
   
   bool get success => error == null && user != null;
 }
@@ -61,10 +62,14 @@ class SupabaseService {
     required UserRole role
   }) async {
     try {
-      // 1. Create auth user
+      // 1. Create auth user with role in user metadata
       final response = await _client.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'username': username,
+          'role': role.toString().split('.').last,
+        }
       );
       
       if (response.user == null) {
@@ -72,21 +77,99 @@ class SupabaseService {
       }
       
       // 2. Add user details to 'users' table
-      await _client.from('users').insert({
-        'id': response.user!.id,
-        'username': username,
-        'email': email,
-        'role': role.toString().split('.').last,
-        'is_approved': role != UserRole.seller, // Sellers need approval
-      });
+      try {
+        // Use upsert to handle both insert and update cases
+        await _client.from('users').upsert({
+          'id': response.user!.id,
+          'username': username,
+          'email': email,
+          'role': role.toString().split('.').last,
+          'is_approved': role != UserRole.seller, // Sellers need approval
+        }, onConflict: 'id');
+        
+        debugPrint('Successfully added user details to users table');
+      } catch (e) {
+        // Log the error for debugging
+        debugPrint('Failed to insert user details: $e');
+        
+        // If insert fails, create a basic user from auth user data
+        if (response.session == null) {
+          return AuthResult(
+            user: User(
+              id: response.user!.id,
+              username: username,
+              email: email,
+              password: '',
+              role: role,
+              isApproved: role != UserRole.seller,
+            ),
+            requiresEmailConfirmation: true,
+          );
+        } else {
+          return AuthResult(
+            user: User(
+              id: response.user!.id,
+              username: username,
+              email: email,
+              password: '',
+              role: role,
+              isApproved: role != UserRole.seller,
+            ),
+          );
+        }
+      }
       
-      // 3. Get complete user data
-      final user = await _getUserDetails(response.user!.id);
+      // 3. Check if email confirmation is required
+      if (response.session == null) {
+        // Email confirmation is required
+        return AuthResult(
+          user: User(
+            id: response.user!.id,
+            username: username,
+            email: email,
+            password: '',
+            role: role,
+          ),
+          error: 'Please check your email to confirm your account.',
+          requiresEmailConfirmation: true,
+        );
+      }
+      
+      // 4. Get complete user data
+      User? user;
+      try {
+        user = await _getUserDetails(response.user!.id);
+      } catch (e) {
+        // If we can't get user details, create a basic user object
+        user = User(
+          id: response.user!.id,
+          username: username,
+          email: email,
+          password: '',
+          role: role,
+          isApproved: role != UserRole.seller,
+        );
+      }
+      
       return AuthResult(user: user);
     } on PostgrestException catch (e) {
       debugPrint('PostgrestException during signup: ${e.message}, code: ${e.code}, details: ${e.details}');
+      if (e.message.contains('recursion') || e.message.contains('violates row-level security policy')) {
+        // This means the auth user was created but we couldn't update the profile
+        // We'll return a success with a warning
+        return AuthResult(
+          error: 'Account created but profile setup incomplete. Please contact support.',
+          requiresEmailConfirmation: true,
+        );
+      }
       return AuthResult(error: e.message);
     } on AuthException catch (e) {
+      if (e.message.contains('Email not confirmed')) {
+        return AuthResult(
+          error: 'Please check your email to confirm your account.',
+          requiresEmailConfirmation: true,
+        );
+      }
       debugPrint('AuthException during signup: ${e.message}');
       return AuthResult(error: e.message);
     } catch (e) {
@@ -132,13 +215,28 @@ class SupabaseService {
   // Helper method to fetch user details from 'users' table
   Future<User?> _getUserDetails(String userId) async {
     try {
+      // Get user details directly from the users table
       final response = await _client
           .from('users')
           .select()
           .eq('id', userId)
-          .single();
-      
-      if (response == null) return null;
+          .maybeSingle();
+          
+      if (response == null) {
+        // Fallback to auth user data if possible
+        final authUser = _client.auth.currentUser;
+        if (authUser != null && authUser.id == userId) {
+          return User(
+            id: userId,
+            username: authUser.userMetadata?['username'] ?? 'User',
+            email: authUser.email ?? '',
+            password: '',
+            role: UserRole.buyer, // Default role
+            isApproved: false,
+          );
+        }
+        return null;
+      }
       
       UserRole role;
       switch (response['role']) {
@@ -165,6 +263,20 @@ class SupabaseService {
       );
     } catch (e) {
       debugPrint('Error fetching user details: $e');
+      
+      // Fallback to auth user data if possible
+      final authUser = _client.auth.currentUser;
+      if (authUser != null && authUser.id == userId) {
+        return User(
+          id: userId,
+          username: authUser.userMetadata?['username'] ?? 'User',
+          email: authUser.email ?? '',
+          password: '',
+          role: UserRole.buyer, // Default role
+          isApproved: false,
+        );
+      }
+      
       return null;
     }
   }

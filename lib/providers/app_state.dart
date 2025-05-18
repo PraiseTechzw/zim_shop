@@ -34,7 +34,7 @@ class AppState extends ChangeNotifier {
   }
 
   // Login with email and password
-  Future<User> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final result = await _supabaseService.signIn(
         email: email,
@@ -42,28 +42,59 @@ class AppState extends ChangeNotifier {
       );
       
       if (result.error != null) {
-        throw AuthException(result.error!);
+        return {
+          'success': false,
+          'message': result.error!,
+          'user': null,
+        };
       }
       
       if (result.user == null) {
-        throw AuthException('Invalid email or password. Please try again.');
+        return {
+          'success': false,
+          'message': 'Invalid email or password. Please try again.',
+          'user': null,
+        };
       }
       
       _currentUser = result.user;
       _currentRole = result.user!.role;
       _isLoggedIn = true;
-      notifyListeners();
-      return result.user!;
-    } catch (e) {
-      if (e is AuthException) {
-        rethrow;
+      
+      // Determine route based on user role
+      String route;
+      switch (_currentRole) {
+        case UserRole.admin:
+          route = '/admin';
+          break;
+        case UserRole.seller:
+          route = '/seller';
+          break;
+        case UserRole.buyer:
+        default:
+          route = '/home';
+          break;
       }
-      throw AuthException('Invalid email or password. Please try again.');
+      
+      notifyListeners();
+      
+      return {
+        'success': true,
+        'message': 'Login successful!',
+        'user': result.user,
+        'route': route,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e is AuthException ? e.message : 'Login failed. Please try again.',
+        'user': null,
+      };
     }
   }
 
   // Register a new user
-  Future<User> register(String username, String email, String password, UserRole role) async {
+  Future<AuthResult> register(String username, String email, String password, UserRole role) async {
     try {
       final result = await _supabaseService.signUp(
         email: email,
@@ -73,7 +104,19 @@ class AppState extends ChangeNotifier {
       );
       
       if (result.error != null) {
+        // Check if this is an RLS error but registration succeeded
+        if (result.error!.contains("recursion") && result.user != null) {
+          // Registration was successful but we got RLS error
+          return AuthResult(
+            user: result.user,
+            requiresEmailConfirmation: result.requiresEmailConfirmation
+          );
+        }
         throw AuthException(result.error!);
+      }
+      
+      if (result.requiresEmailConfirmation) {
+        return result; // Return the result with confirmationRequired flag
       }
       
       if (result.user == null) {
@@ -82,7 +125,7 @@ class AppState extends ChangeNotifier {
       
       // In a real app, we would not auto-login after registration
       // especially if email verification is required
-      return result.user!;
+      return result;
     } catch (e) {
       if (e is AuthException) {
         rethrow;
@@ -103,7 +146,7 @@ class AppState extends ChangeNotifier {
       // Success - email has been sent
     } catch (e) {
       throw AuthException('Failed to send password reset email. Please try again.');
-    }
+  }
   }
 
   Future<void> logout() async {
@@ -139,7 +182,7 @@ class AppState extends ChangeNotifier {
           await getUsers();
         }
         
-        notifyListeners();
+      notifyListeners();
       }
     }
   }

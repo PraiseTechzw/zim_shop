@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
   import 'package:zim_shop/providers/app_state.dart';
   import 'package:zim_shop/providers/theme_provider.dart';
-  import 'package:zim_shop/screen/login_screen.dart';
+import 'package:zim_shop/screen/auth/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);

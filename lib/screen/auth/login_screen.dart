@@ -44,17 +44,34 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Attempt login
       final appState = Provider.of<AppState>(context, listen: false);
-      await appState.login(email, password);
+      final result = await appState.login(email, password);
       
-      // No need to navigate, AuthCheckWrapper will handle it automatically
-    } on AuthException catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (!mounted) return;
+      
+      if (result['success']) {
+        // Show success feedback
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
+        // Navigate to the appropriate page based on role
+        Navigator.of(context).pushReplacementNamed(result['route']);
+      } else {
+        // Show error message
+        setState(() {
+          _errorMessage = result['message'];
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred. Please try again.';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {

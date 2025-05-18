@@ -60,9 +60,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       
       // Attempt registration
       final appState = Provider.of<AppState>(context, listen: false);
-      await appState.register(username, email, password, _selectedRole);
+      final result = await appState.register(username, email, password, _selectedRole);
 
       if (!mounted) return;
+      
+      if (result.requiresEmailConfirmation) {
+        // Show email confirmation message
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Email Verification'),
+            content: Text('We\'ve sent a verification email to $email. Please check your inbox and verify your email to complete registration.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // Return to login screen
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
       
       // Show success message and navigate back
       ScaffoldMessenger.of(context).showSnackBar(

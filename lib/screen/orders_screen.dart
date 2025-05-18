@@ -46,7 +46,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -83,12 +83,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
     return RefreshIndicator(
       onRefresh: _loadOrders,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
         itemCount: _orders.length,
-        itemBuilder: (context, index) {
+      itemBuilder: (context, index) {
           final order = _orders[index];
-          return OrderCard(order: order);
-        },
+        return OrderCard(order: order);
+      },
       ),
     );
   }
