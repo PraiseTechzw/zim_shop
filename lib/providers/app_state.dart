@@ -17,14 +17,30 @@ class AppState extends ChangeNotifier {
   User? _currentUser;
   bool _isLoggedIn = false;
   List<User> _users = [];
+  bool _isLoading = false;
+  bool _isAuthenticated = false;
   
   final SupabaseService _supabaseService = SupabaseService();
+
+  AppState() {
+    _checkCurrentUser();
+  }
 
   UserRole get currentRole => _currentRole;
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _isLoggedIn;
   List<User> get users => _users;
+  bool get isLoading => _isLoading;
+  bool get isAuthenticated => _isAuthenticated;
+  bool get isAdmin => _currentUser?.role == UserRole.admin;
+  bool get isSeller => _currentUser?.role == UserRole.seller;
+  bool get isSellerApproved => 
+    _currentUser?.role == UserRole.seller && _currentUser?.isApproved == true;
   
+  // Check if seller profile is complete
+  bool get isSellerProfileComplete => 
+    _currentUser?.hasCompleteSellerProfile ?? false;
+
   // Get users (this should only be used by admins)
   Future<List<User>> getUsers() async {
     // In production, we would check if the current user is an admin
@@ -146,7 +162,7 @@ class AppState extends ChangeNotifier {
       // Success - email has been sent
     } catch (e) {
       throw AuthException('Failed to send password reset email. Please try again.');
-  }
+    }
   }
 
   Future<void> logout() async {
@@ -182,8 +198,63 @@ class AppState extends ChangeNotifier {
           await getUsers();
         }
         
-      notifyListeners();
+        notifyListeners();
       }
+    }
+  }
+
+  // Update current user
+  void updateCurrentUser(User user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
+  Future<void> _checkCurrentUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _supabaseService.initialize();
+      _currentUser = await _supabaseService.getCurrentUser();
+      _isAuthenticated = _currentUser != null;
+    } catch (e) {
+      debugPrint('Error checking current user: $e');
+      _isAuthenticated = false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshUser() async {
+    if (!_isAuthenticated) return;
+    
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      _currentUser = await _supabaseService.getCurrentUser();
+    } catch (e) {
+      debugPrint('Error refreshing user: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signOut() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _supabaseService.signOut();
+      _currentUser = null;
+      _isAuthenticated = false;
+    } catch (e) {
+      debugPrint('Error signing out: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }
