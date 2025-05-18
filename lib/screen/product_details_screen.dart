@@ -5,6 +5,7 @@ import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/checkout_screen.dart';
 import 'package:zim_shop/widgets/quantity_selector.dart';
+import 'package:zim_shop/widgets/whatsapp_icon.dart';
 
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -375,11 +376,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Widget _buildWhatsAppButton(ThemeData theme) {
     return ElevatedButton.icon(
       onPressed: () => _contactSellerViaWhatsApp(),
-      icon: Image.asset(
-        'assets/images/whatsapp_icon.png',
-        width: 20,
-        height: 20,
-      ),
+      icon: const WhatsAppIcon(size: 20),
       label: const Text('WhatsApp'),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.green,
