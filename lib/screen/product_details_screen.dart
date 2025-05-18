@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/checkout_screen.dart';
@@ -343,28 +344,113 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               ),
             ),
           
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           
-          // Contact seller button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // This would launch a chat or message screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Contact seller feature coming soon!'),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.chat_outlined),
-              label: const Text('Contact Seller'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+          // Contact buttons
+          Row(
+            children: [
+              // WhatsApp contact button if available
+              if (widget.product.sellerWhatsapp != null)
+                Expanded(
+                  child: _buildWhatsAppButton(theme),
+                ),
+                
+              // General contact button or full-width button if WhatsApp not available
+              Expanded(
+                child: widget.product.sellerWhatsapp != null
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: _buildContactButton(theme),
+                      )
+                    : _buildContactButton(theme),
               ),
-            ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+  
+  // WhatsApp button
+  Widget _buildWhatsAppButton(ThemeData theme) {
+    return ElevatedButton.icon(
+      onPressed: () => _contactSellerViaWhatsApp(),
+      icon: Image.asset(
+        'assets/images/whatsapp_icon.png',
+        width: 20,
+        height: 20,
+      ),
+      label: const Text('WhatsApp'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+    );
+  }
+  
+  // Regular contact button
+  Widget _buildContactButton(ThemeData theme) {
+    return OutlinedButton.icon(
+      onPressed: () => _contactSeller(),
+      icon: const Icon(Icons.chat_outlined),
+      label: const Text('Contact'),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+    );
+  }
+  
+  // Contact via WhatsApp
+  Future<void> _contactSellerViaWhatsApp() async {
+    if (widget.product.sellerWhatsapp == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WhatsApp number not available')),
+      );
+      return;
+    }
+    
+    // Format number to remove any non-digit characters
+    final phoneNumber = widget.product.sellerWhatsapp!.replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Create message template
+    final message = 'Hello, I am interested in your product "${widget.product.name}" on ZimMarket. Is it still available?';
+    
+    // Create WhatsApp URL
+    final whatsappUrl = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
+    
+    // Launch WhatsApp
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not launch WhatsApp')),
+      );
+    }
+  }
+  
+  // Regular contact method
+  void _contactSeller() {
+    // This would launch an in-app chat feature or email in a real app
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('In-app messaging coming soon!'),
+        action: SnackBarAction(
+          label: 'EMAIL',
+          onPressed: () async {
+            if (widget.product.sellerEmail == null) return;
+            
+            final emailUri = Uri(
+              scheme: 'mailto',
+              path: widget.product.sellerEmail,
+              query: 'subject=Regarding your product on ZimMarket: ${widget.product.name}',
+            );
+            
+            if (await canLaunchUrl(emailUri)) {
+              await launchUrl(emailUri);
+            }
+          },
+        ),
       ),
     );
   }
