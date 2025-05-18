@@ -1,12 +1,12 @@
 class Product {
-  final int id;
+  final String id;
   final String name;
   final String description;
   final double price;
   final String imageUrl;
   final String category;
   final String location;
-  final int sellerId;
+  final String sellerId;
   final String sellerName;
   
   Product({
@@ -22,14 +22,14 @@ class Product {
   });
   
   Product copyWith({
-    int? id,
+    String? id,
     String? name,
     String? description,
     double? price,
     String? imageUrl,
     String? category,
     String? location,
-    int? sellerId,
+    String? sellerId,
     String? sellerName,
   }) {
     return Product(

@@ -1,7 +1,7 @@
 import 'package:zim_shop/providers/app_state.dart' show UserRole;
 
 class User {
-  final int id;
+  final String id;
   final String username;
   final String email;
   final String password; // In a real app, this would be hashed
@@ -18,7 +18,7 @@ class User {
   });
   
   User copyWith({
-    int? id,
+    String? id,
     String? username,
     String? email,
     String? password,

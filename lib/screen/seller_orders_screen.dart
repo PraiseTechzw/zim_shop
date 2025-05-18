@@ -1,29 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:zim_shop/mock_data.dart';
+import 'package:zim_shop/models/order.dart';
 import 'package:zim_shop/providers/app_state.dart';
+import 'package:zim_shop/services/supabase_service.dart';
 import 'package:zim_shop/widgets/order_card.dart';
 
-class SellerOrdersScreen extends StatelessWidget {
+class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+  State<SellerOrdersScreen> createState() => _SellerOrdersScreenState();
+}
+
+class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
+  final SupabaseService _supabaseService = SupabaseService();
+  List<Order> _sellerOrders = [];
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+  
+  Future<void> _loadOrders() async {
+    final appState = Provider.of<AppState>(context, listen: false);
     final sellerId = appState.currentUser?.id;
     
-    // Get seller's products
-    final sellerProducts = MockData.products
-        .where((product) => product.sellerId == sellerId)
-        .toList();
+    if (sellerId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
     
-    // Get orders containing seller's products
-    final sellerOrders = MockData.orders
-        .where((order) => order.items.any((item) => 
-            sellerProducts.any((product) => product.id == item.product.id)))
-        .toList();
+    try {
+      final orders = await _supabaseService.getSellerOrders(sellerId);
+      
+      if (mounted) {
+        setState(() {
+          _sellerOrders = orders;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading seller orders: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     
-    if (sellerOrders.isEmpty) {
+    if (_sellerOrders.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -50,16 +82,19 @@ class SellerOrdersScreen extends StatelessWidget {
       );
     }
     
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sellerOrders.length,
-      itemBuilder: (context, index) {
-        final order = sellerOrders[index];
-        return OrderCard(
-          order: order,
-          isSellerView: true,
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: _loadOrders,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _sellerOrders.length,
+        itemBuilder: (context, index) {
+          final order = _sellerOrders[index];
+          return OrderCard(
+            order: order,
+            isSellerView: true,
+          );
+        },
+      ),
     );
   }
 }

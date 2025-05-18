@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:zim_shop/mock_data.dart';
 import 'package:zim_shop/models/user.dart';
 import 'package:zim_shop/services/supabase_service.dart';
 

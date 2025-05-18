@@ -114,6 +114,9 @@ CREATE POLICY "Admins can view all users" ON public.users
     )
   );
 
+CREATE POLICY "Users can insert their own data" ON public.users
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
 -- Products policies
 CREATE POLICY "Anyone can view active products" ON public.products
   FOR SELECT USING (is_active = TRUE);

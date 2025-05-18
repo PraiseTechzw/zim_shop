@@ -1,9 +1,8 @@
-
 import 'package:zim_shop/models/cart_item.dart';
 
 class Order {
-  final int id;
-  final int userId;
+  final String id;
+  final String userId;
   final List<CartItem> items;
   final double totalAmount;
   final DateTime date;

@@ -1,21 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'package:zim_shop/mock_data.dart';
+import 'package:zim_shop/models/order.dart';
 import 'package:zim_shop/providers/app_state.dart';
+import 'package:zim_shop/services/supabase_service.dart';
 import 'package:zim_shop/widgets/order_card.dart';
 
-class OrdersScreen extends StatelessWidget {
+class OrdersScreen extends StatefulWidget {
   const OrdersScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final userOrders = MockData.orders
-        .where((order) => order.userId == appState.currentUser?.id)
-        .toList();
+  State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends State<OrdersScreen> {
+  final SupabaseService _supabaseService = SupabaseService();
+  List<Order> _orders = [];
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+  
+  Future<void> _loadOrders() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (appState.currentUser == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
     
-    if (userOrders.isEmpty) {
+    try {
+      final orders = await _supabaseService.getUserOrders(appState.currentUser!.id);
+      
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading orders: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    if (_orders.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -42,13 +80,16 @@ class OrdersScreen extends StatelessWidget {
       );
     }
     
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: userOrders.length,
-      itemBuilder: (context, index) {
-        final order = userOrders[index];
-        return OrderCard(order: order);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadOrders,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _orders.length,
+        itemBuilder: (context, index) {
+          final order = _orders[index];
+          return OrderCard(order: order);
+        },
+      ),
     );
   }
 }

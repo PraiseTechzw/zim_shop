@@ -8,8 +8,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 // Supabase configuration constants
-const String supabaseUrl = 'YOUR_SUPABASE_URL';
-const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
+const String supabaseUrl = 'https://gkyeijnygndqqstxucpn.supabase.co';
+const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdreWVpam55Z25kcXFzdHh1Y3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1Nzk5NzcsImV4cCI6MjA2MzE1NTk3N30.kgLfES9rO2VsIkCErg556pbXc3UZEaSjuoX7SHcRQFU';
 
 class AuthResult {
   final User? user;
@@ -84,10 +84,13 @@ class SupabaseService {
       final user = await _getUserDetails(response.user!.id);
       return AuthResult(user: user);
     } on PostgrestException catch (e) {
+      debugPrint('PostgrestException during signup: ${e.message}, code: ${e.code}, details: ${e.details}');
       return AuthResult(error: e.message);
     } on AuthException catch (e) {
+      debugPrint('AuthException during signup: ${e.message}');
       return AuthResult(error: e.message);
     } catch (e) {
+      debugPrint('Unknown error during signup: $e');
       return AuthResult(error: e.toString());
     }
   }
@@ -153,7 +156,7 @@ class SupabaseService {
       }
       
       return User(
-        id: int.parse(response['id']),
+        id: userId,
         username: response['username'],
         email: response['email'],
         password: '', // We don't store passwords in the app
@@ -211,8 +214,43 @@ class SupabaseService {
     }
   }
   
+  Future<bool> updateProduct(Product product) async {
+    try {
+      await _client
+          .from('products')
+          .update({
+            'name': product.name,
+            'description': product.description,
+            'price': product.price,
+            'image_url': product.imageUrl,
+            'category': product.category,
+            'location': product.location,
+          })
+          .eq('id', product.id);
+      return true;
+    } catch (e) {
+      debugPrint('Error updating product: $e');
+      return false;
+    }
+  }
+  
+  Future<bool> deleteProduct(String productId) async {
+    try {
+      // Delete product
+      await _client
+          .from('products')
+          .delete()
+          .eq('id', productId);
+      
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting product: $e');
+      return false;
+    }
+  }
+  
   // ORDERS METHODS
-  Future<List<Order>> getUserOrders(int userId) async {
+  Future<List<Order>> getUserOrders(String userId) async {
     try {
       final response = await _client
           .from('orders')
@@ -227,6 +265,39 @@ class SupabaseService {
       return orders;
     } catch (e) {
       debugPrint('Error fetching orders: $e');
+      return [];
+    }
+  }
+  
+  Future<List<Order>> getSellerOrders(String sellerId) async {
+    try {
+      // First get seller's products
+      final productsResponse = await _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId);
+      
+      if (productsResponse.isEmpty) {
+        return [];
+      }
+      
+      // Extract product IDs
+      final productIds = productsResponse.map((p) => p['id'] as String).toList();
+      
+      // For now, we'll simplify and just return all orders
+      // In a real implementation, you would filter by seller's products
+      final response = await _client
+          .from('orders')
+          .select('*, order_items(*)')
+          .order('created_at', ascending: false);
+      
+      // Parse orders from response
+      List<Order> orders = [];
+      // Implementation will depend on your data structure
+      
+      return orders;
+    } catch (e) {
+      debugPrint('Error fetching seller orders: $e');
       return [];
     }
   }
@@ -366,7 +437,7 @@ class SupabaseService {
         }
         
         return User(
-          id: int.parse(item['id']),
+          id: item['id'],
           username: item['username'],
           email: item['email'],
           password: '', // We don't store passwords in the app

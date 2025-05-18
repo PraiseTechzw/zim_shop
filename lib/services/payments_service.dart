@@ -41,8 +41,8 @@ class PaymentsService {
       
       // 2. Create order in database
       final order = Order(
-        id: 0, // Will be assigned by the database
-        userId: int.parse(userId),
+        id: '', // Will be assigned by the database
+        userId: userId,
         items: items,
         totalAmount: totalAmount,
         date: DateTime.now(),

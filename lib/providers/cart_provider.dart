@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-    import 'package:zim_shop/models/cart_item.dart';
-    import 'package:zim_shop/models/order.dart';
-    import 'package:zim_shop/models/product.dart';
-    import 'package:zim_shop/mock_data.dart';
+import 'package:zim_shop/models/cart_item.dart';
+import 'package:zim_shop/models/order.dart';
+import 'package:zim_shop/models/product.dart';
+import 'package:zim_shop/services/supabase_service.dart';
 
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
+  final SupabaseService _supabaseService = SupabaseService();
   
   List<CartItem> get items => _items;
   
@@ -29,12 +30,12 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  void removeItem(int productId) {
+  void removeItem(String productId) {
     _items.removeWhere((item) => item.product.id == productId);
     notifyListeners();
   }
   
-  void updateQuantity(int productId, int quantity) {
+  void updateQuantity(String productId, int quantity) {
     final index = _items.indexWhere((item) => item.product.id == productId);
     if (index >= 0) {
       if (quantity <= 0) {
@@ -54,18 +55,27 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  Order checkout(int userId) {
-    final order = Order(
-      id: MockData.orders.length + 1,
-      userId: userId,
-      items: List.from(_items),
-      totalAmount: totalAmount,
-      date: DateTime.now(),
-      status: 'Processing',
-    );
-    
-    MockData.orders.add(order);
-    clear();
-    return order;
+  Future<Order?> checkout(String userId) async {
+    try {
+      final order = Order(
+        id: '', // Will be assigned by database
+        userId: userId,
+        items: List.from(_items),
+        totalAmount: totalAmount,
+        date: DateTime.now(),
+        status: 'pending',
+      );
+      
+      final success = await _supabaseService.createOrder(order);
+      
+      if (success) {
+        clear();
+        return order;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error during checkout: $e');
+      return null;
+    }
   }
 }
