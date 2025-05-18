@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final appState = Provider.of<AppState>(context, listen: false);
-    appState.login(username, _selectedRole);
+    appState.login(username, _selectedRole as String);
 
     // Navigate based on selected role
     switch (_selectedRole) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/widgets/theme_toggle_button.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -13,6 +15,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
   bool _emailSent = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -27,16 +30,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // Mock password reset process
-    setState(() {
-      _isLoading = false;
-      _emailSent = true;
-    });
+    try {
+      // Get email
+      final email = _emailController.text.trim();
+      
+      // Attempt password reset
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.forgotPassword(email);
+      
+      if (!mounted) return;
+      
+      // Show success
+      setState(() {
+        _isLoading = false;
+        _emailSent = true;
+      });
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -82,7 +104,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          if (_errorMessage != null)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -187,4 +235,4 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ],
     );
   }
-} 
+}
