@@ -293,6 +293,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
+                              return 'Please enter your city';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _postalCodeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Postal Code',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your postal code';
+                            }
+                            return null;
+                          },
+                        ),
                         
                         const SizedBox(height: 24),
                         
