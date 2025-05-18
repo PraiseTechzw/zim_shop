@@ -69,13 +69,13 @@ void main() async {
     setupDeeplinkHandling(appState);
     
     // Everything initialized successfully, start the app
-    runApp(
-      MultiProvider(
-        providers: [
+  runApp(
+    MultiProvider(
+      providers: [
           ChangeNotifierProvider.value(value: appState),
-          ChangeNotifierProvider(create: (_) => CartProvider()),
-          ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ],
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
         child: ZimMarketApp(navigatorKey: navigatorKey),
       ),
     );

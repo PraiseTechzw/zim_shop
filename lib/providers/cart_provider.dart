@@ -55,26 +55,46 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  Future<Order?> checkout(String userId) async {
+  Future<Order?> checkout(String userId, {Map<String, String>? shippingInfo}) async {
     try {
-      final order = Order(
-        id: '', // Will be assigned by database
-        userId: userId,
-        items: List.from(_items),
-        totalAmount: totalAmount,
-        date: DateTime.now(),
-        status: 'pending',
-      );
+      // Create order in Supabase
+      final orderData = {
+        'user_id': userId,
+        'total_amount': totalAmount,
+        'status': 'pending',
+        'shipping_name': shippingInfo?['name'],
+        'shipping_address': shippingInfo?['address'],
+        'shipping_phone': shippingInfo?['phone'],
+        'shipping_email': shippingInfo?['email'],
+        'created_at': DateTime.now().toIso8601String(),
+      };
       
-      final success = await _supabaseService.createOrder(order);
+      final response = await _supabaseService.client
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single();
       
-      if (success) {
-        clear();
-        return order;
+      if (response == null) {
+        return null;
       }
-      return null;
+      
+      // Create order items
+      for (final item in items) {
+        await _supabaseService.client.from('order_items').insert({
+          'order_id': response['id'],
+          'product_id': item.product.id,
+          'quantity': item.quantity,
+          'price': item.product.price,
+        });
+      }
+      
+      // Clear cart after successful order
+      clear();
+      
+      return Order.fromJson(response);
     } catch (e) {
-      debugPrint('Error during checkout: $e');
+      debugPrint('Error creating order: $e');
       return null;
     }
   }

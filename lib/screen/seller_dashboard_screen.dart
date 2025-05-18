@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zim_shop/models/order.dart';
 import 'package:zim_shop/models/product.dart';
-import 'package:zim_shop/providers/app_state.dart';
+  import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/services/supabase_service.dart';
 import 'package:zim_shop/screen/add_product_screen.dart';
 import 'package:zim_shop/screen/seller_orders_screen.dart';
@@ -45,18 +45,18 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       
       // Filter seller's products
       final sellerProducts = allProducts.where((p) => p.sellerId == sellerId).toList();
-      
-      // Get seller's orders
+    
+    // Get seller's orders
       final allOrders = await _supabaseService.getSellerOrders(sellerId);
-      
-      // Calculate total revenue
-      double totalRevenue = 0;
+    
+    // Calculate total revenue
+    double totalRevenue = 0;
       final customerIds = <String>{};
       
       for (final order in allOrders) {
-        for (final item in order.items) {
+      for (final item in order.items) {
           if (sellerProducts.any((p) => p.id == item.product.id)) {
-            totalRevenue += item.product.price * item.quantity;
+          totalRevenue += item.product.price * item.quantity;
           }
         }
         customerIds.add(order.userId);
@@ -109,7 +109,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -128,18 +128,18 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     const Icon(Icons.info_outline, color: Colors.orange),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
                             'Complete your profile',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.bold,
                               color: Colors.orange[800],
-                            ),
-                          ),
+            ),
+          ),
                           const SizedBox(height: 4),
-                          Text(
+          Text(
                             'Add your business details to enhance your seller profile',
                             style: TextStyle(
                               fontSize: 12,
@@ -263,13 +263,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
             const SizedBox(height: 20),
             
             // Main stats cards with animation
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
                 _buildAnimatedCard(
                   'Products',
                   _sellerProducts.length.toString(),
@@ -297,22 +297,22 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                   Icons.people,
                   Colors.purple,
                   null,
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
             // Recent orders with modern card design
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Recent Orders',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          Text(
+            'Recent Orders',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
                 TextButton.icon(
                   onPressed: _navigateToOrders,
                   icon: const Icon(Icons.arrow_forward),
@@ -337,8 +337,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                             Icons.receipt_long_outlined,
                             size: 48,
                             color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
                           Text(
                             'No orders yet',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -351,22 +351,22 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                             style: TextStyle(color: Colors.grey),
                           ),
                         ],
-                      ),
                     ),
-                  )
-                : Card(
-                    margin: EdgeInsets.zero,
+                  ),
+                )
+              : Card(
+                  margin: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                       itemCount: _sellerOrders.length > 5 ? 5 : _sellerOrders.length,
                       separatorBuilder: (context, index) => const Divider(height: 1, indent: 16, endIndent: 16),
-                      itemBuilder: (context, index) {
+                    itemBuilder: (context, index) {
                         final order = _sellerOrders[index];
-                        return ListTile(
+                      return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           leading: CircleAvatar(
                             backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
@@ -382,32 +382,32 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                             'Order #${order.id.substring(0, 8)}',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text(
-                            '${order.date.day}/${order.date.month}/${order.date.year} - ${order.status}',
+                        subtitle: Text(
+                          '${order.date.day}/${order.date.month}/${order.date.year} - ${order.status}',
+                        ),
+                        trailing: Text(
+                          '\$${order.totalAmount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          trailing: Text(
-                            '\$${order.totalAmount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
+                        ),
                           onTap: _navigateToOrders,
-                        );
-                      },
-                    ),
+                      );
+                    },
                   ),
-            
-            const SizedBox(height: 24),
-            
+                ),
+          
+          const SizedBox(height: 24),
+          
             // Quick actions with larger, more visible buttons
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          Text(
+            'Quick Actions',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
             
             // Action cards grid
             GridView.count(
@@ -417,7 +417,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               childAspectRatio: 1.5,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              children: [
+            children: [
                 _buildActionCard(
                   'Add New Product',
                   Icons.add_circle_outline,

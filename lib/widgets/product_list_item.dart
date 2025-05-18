@@ -41,18 +41,18 @@ class ProductListItem extends StatelessWidget {
               },
             )
           : Image.asset(
-              product.imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Center(
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 24,
-                    color: Colors.grey,
-                  ),
-                );
-              },
-            ),
+          product.imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(
+                Icons.image_not_supported,
+                size: 24,
+                color: Colors.grey,
+              ),
+            );
+          },
+        ),
       ),
       title: Text(product.name),
       subtitle: Text(

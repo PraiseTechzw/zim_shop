@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/checkout_screen.dart';
 import 'package:zim_shop/widgets/quantity_selector.dart';
-import 'package:zim_shop/widgets/whatsapp_icon.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -49,11 +51,20 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         debugPrint('Error loading product image: $error');
-                        return const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 50,
-                            color: Colors.grey,
+                        return _buildDefaultProductImage(theme);
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        // If loading takes too long, show default image
+                        if (loadingProgress.expectedTotalBytes != null &&
+                            loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! < 0.1) {
+                          return _buildDefaultProductImage(theme);
+                        }
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
                           ),
                         );
                       },
@@ -62,13 +73,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       widget.product.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
-                        );
+                        return _buildDefaultProductImage(theme);
                       },
                     ),
               ),
@@ -106,7 +111,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   // Location
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16),
+                      FaIcon(FontAwesomeIcons.locationDot, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         widget.product.location,
@@ -180,7 +185,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.shopping_cart),
+                          icon: const FaIcon(FontAwesomeIcons.cartShopping),
                           label: const Text('Add to Cart'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -199,7 +204,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.payments),
+                          icon: const FaIcon(FontAwesomeIcons.creditCard),
                           label: const Text('Buy Now'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -348,22 +353,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           const SizedBox(height: 16),
           
           // Contact buttons
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               // WhatsApp contact button if available
               if (widget.product.sellerWhatsapp != null)
-                Expanded(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.4,
                   child: _buildWhatsAppButton(theme),
                 ),
                 
               // General contact button or full-width button if WhatsApp not available
-              Expanded(
-                child: widget.product.sellerWhatsapp != null
-                    ? Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: _buildContactButton(theme),
-                      )
-                    : _buildContactButton(theme),
+              SizedBox(
+                width: widget.product.sellerWhatsapp != null
+                    ? MediaQuery.of(context).size.width * 0.4
+                    : double.infinity,
+                child: _buildContactButton(theme),
               ),
             ],
           ),
@@ -376,12 +382,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Widget _buildWhatsAppButton(ThemeData theme) {
     return ElevatedButton.icon(
       onPressed: () => _contactSellerViaWhatsApp(),
-      icon: const WhatsAppIcon(size: 20),
-      label: const Text('WhatsApp'),
+      icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+      label: const Text('WhatsApp', style: TextStyle(fontSize: 12)),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
@@ -390,10 +398,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Widget _buildContactButton(ThemeData theme) {
     return OutlinedButton.icon(
       onPressed: () => _contactSeller(),
-      icon: const Icon(Icons.chat_outlined),
-      label: const Text('Contact'),
+      icon: const FaIcon(FontAwesomeIcons.message, size: 16),
+      label: const Text('Contact', style: TextStyle(fontSize: 12)),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
@@ -407,22 +417,106 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       return;
     }
     
-    // Format number to remove any non-digit characters
-    final phoneNumber = widget.product.sellerWhatsapp!.replaceAll(RegExp(r'[^\d]'), '');
-    
-    // Create message template
-    final message = 'Hello, I am interested in your product "${widget.product.name}" on ZimMarket. Is it still available?';
-    
-    // Create WhatsApp URL
-    final whatsappUrl = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
-    
-    // Launch WhatsApp
-    if (await canLaunchUrl(whatsappUrl)) {
-      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not launch WhatsApp')),
-      );
+    try {
+      // Format number to remove any non-digit characters and ensure it starts with country code
+      String phoneNumber = widget.product.sellerWhatsapp!.replaceAll(RegExp(r'[^\d]'), '');
+      
+      // Add Zimbabwe country code if not present
+      if (!phoneNumber.startsWith('263')) {
+        if (phoneNumber.startsWith('0')) {
+          phoneNumber = '263${phoneNumber.substring(1)}';
+        } else {
+          phoneNumber = '263$phoneNumber';
+        }
+      }
+      
+      // Create message template
+      final message = 'Hello, I am interested in your product "${widget.product.name}" on ZimMarket. Is it still available?';
+      
+      // Try different URL formats
+      final urls = [
+        // WhatsApp Business API URL
+        Uri.parse('https://api.whatsapp.com/send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}'),
+        // WhatsApp Web URL
+        Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}'),
+        // WhatsApp native URL
+        Uri.parse('whatsapp://send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}'),
+      ];
+
+      bool launched = false;
+      for (final url in urls) {
+        try {
+          if (await canLaunchUrl(url)) {
+            await launchUrl(
+              url,
+              mode: LaunchMode.externalApplication,
+            );
+            launched = true;
+            break;
+          }
+        } catch (e) {
+          debugPrint('Failed to launch URL: $url');
+          continue;
+        }
+      }
+
+      if (!launched) {
+        // If all URL formats fail, show dialog with options
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Open WhatsApp'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Please choose an option:'),
+                  const SizedBox(height: 16),
+                  Text('Phone: $phoneNumber'),
+                  const SizedBox(height: 8),
+                  Text('Message: $message'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('CANCEL'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: phoneNumber));
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Phone number copied to clipboard')),
+                    );
+                  },
+                  child: const Text('COPY NUMBER'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not open WhatsApp'),
+            action: SnackBarAction(
+              label: 'COPY NUMBER',
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: widget.product.sellerWhatsapp!));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Phone number copied to clipboard')),
+                );
+              },
+            ),
+          ),
+        );
+      }
     }
   }
   
@@ -437,14 +531,59 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           onPressed: () async {
             if (widget.product.sellerEmail == null) return;
             
-            final emailUri = Uri(
-              scheme: 'mailto',
-              path: widget.product.sellerEmail,
-              query: 'subject=Regarding your product on ZimMarket: ${widget.product.name}',
-            );
-            
-            if (await canLaunchUrl(emailUri)) {
-              await launchUrl(emailUri);
+            try {
+              final emailUri = Uri(
+                scheme: 'mailto',
+                path: widget.product.sellerEmail,
+                queryParameters: {
+                  'subject': 'Regarding your product on ZimMarket: ${widget.product.name}',
+                },
+              );
+              
+              if (await canLaunchUrl(emailUri)) {
+                await launchUrl(
+                  emailUri,
+                  mode: LaunchMode.externalNonBrowserApplication,
+                );
+              } else {
+                throw Exception('Could not launch email client');
+              }
+            } catch (e) {
+              if (mounted) {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Contact Seller'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Email: ${widget.product.sellerEmail}'),
+                        const SizedBox(height: 8),
+                        Text('Subject: Regarding your product on ZimMarket: ${widget.product.name}'),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('CANCEL'),
+                      ),
+                      FilledButton(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: widget.product.sellerEmail!));
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Email address copied to clipboard')),
+                          );
+                        },
+                        child: const Text('COPY EMAIL'),
+                      ),
+                    ],
+                  ),
+                );
+              }
             }
           },
         ),
@@ -459,15 +598,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       children: List.generate(5, (index) {
         if (index < rating.floor()) {
           // Full star
-          return Icon(Icons.star, color: Colors.amber, size: 14);
+          return FaIcon(FontAwesomeIcons.solidStar, color: Colors.amber, size: 14);
         } else if (index < rating.ceil() && index > rating.floor()) {
           // Half star
-          return Icon(Icons.star_half, color: Colors.amber, size: 14);
+          return FaIcon(FontAwesomeIcons.starHalfStroke, color: Colors.amber, size: 14);
         } else {
           // Empty star
-          return Icon(Icons.star_border, color: Colors.amber, size: 14);
+          return FaIcon(FontAwesomeIcons.star, color: Colors.amber, size: 14);
         }
       }),
+    );
+  }
+
+  // Default product image widget
+  Widget _buildDefaultProductImage(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surface,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FaIcon(
+              FontAwesomeIcons.image,
+              size: 48,
+              color: theme.colorScheme.primary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Image not available',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

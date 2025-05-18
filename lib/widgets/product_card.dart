@@ -51,18 +51,18 @@ class ProductCard extends StatelessWidget {
                           },
                         )
                       : Image.asset(
-                          product.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                size: 40,
-                                color: Colors.grey[400],
-                              ),
-                            );
-                          },
-                        ),
+                      product.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: Colors.grey[400],
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
                 // Gradient overlay
@@ -126,9 +126,9 @@ class ProductCard extends StatelessWidget {
                         Icons.verified_user,
                         color: Colors.green,
                         size: 16,
-                      ),
                     ),
                   ),
+                ),
               ],
             ),
             

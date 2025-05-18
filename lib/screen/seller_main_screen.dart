@@ -19,7 +19,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
   int _selectedIndex = 0;
   
   final List<Widget> _screens = [
-    const SellerDashboardScreen(),
+      const SellerDashboardScreen(),
     const SellerProductsScreen(),
     const SellerOrdersScreen(),
     const SellerProfileScreen(),

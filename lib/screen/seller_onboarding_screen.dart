@@ -68,27 +68,76 @@ class _SellerOnboardingScreenState extends State<SellerOnboardingScreen> {
       );
       
       if (success) {
-        // Call completion callback
-        widget.onCompleted();
+        // Show success dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Success!'),
+                ],
+              ),
+              content: const Text('Your seller profile has been updated successfully.'),
+              actions: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    widget.onCompleted(); // Call completion callback
+                  },
+                  child: const Text('CONTINUE'),
+                ),
+              ],
+            ),
+          );
+        }
       } else {
-        _showErrorSnackBar('Failed to update seller profile. Please try again.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Failed to update seller profile. Please try again.'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
       }
     } catch (e) {
-      _showErrorSnackBar('An error occurred: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('An error occurred: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-  }
-  
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
   
   @override

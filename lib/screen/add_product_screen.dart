@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:zim_shop/models/product.dart';
-import 'package:zim_shop/providers/app_state.dart';
+  import 'package:zim_shop/models/product.dart';
+  import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/services/supabase_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -185,21 +185,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
     setState(() => _isLoading = true);
     
     try {
-      final appState = Provider.of<AppState>(context, listen: false);
-      final sellerId = appState.currentUser?.id;
-      final sellerName = appState.currentUser?.username;
-      
-      if (sellerId == null || sellerName == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: Seller information not found')),
-        );
+    final appState = Provider.of<AppState>(context, listen: false);
+    final sellerId = appState.currentUser?.id;
+    final sellerName = appState.currentUser?.username;
+    
+    if (sellerId == null || sellerName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Seller information not found')),
+      );
         setState(() => _isLoading = false);
-        return;
-      }
-      
-      final name = _nameController.text.trim();
-      final description = _descriptionController.text.trim();
-      final price = double.tryParse(_priceController.text) ?? 0.0;
+      return;
+    }
+    
+    final name = _nameController.text.trim();
+    final description = _descriptionController.text.trim();
+    final price = double.tryParse(_priceController.text) ?? 0.0;
       
       // Upload image if a new one was selected
       String productImageUrl = _imageUrl ?? 'assets/images/placeholder.jpg';
@@ -215,35 +215,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
         }
         setState(() => _isUploading = false);
       }
-      
-      if (widget.product == null) {
-        // Add new product
-        final newProduct = Product(
+    
+    if (widget.product == null) {
+      // Add new product
+      final newProduct = Product(
           id: '',  // Will be assigned by database
-          name: name,
-          description: description,
-          price: price,
+        name: name,
+        description: description,
+        price: price,
           imageUrl: productImageUrl,
-          category: _selectedCategory,
-          location: _selectedLocation,
-          sellerId: sellerId,
-          sellerName: sellerName,
-        );
-        
+        category: _selectedCategory,
+        location: _selectedLocation,
+        sellerId: sellerId,
+        sellerName: sellerName,
+      );
+      
         final success = await _supabaseService.addProduct(newProduct);
-        
+      
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Product added successfully')),
-          );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product added successfully')),
+      );
           Navigator.of(context).pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to add product. Please try again.')),
           );
         }
-      } else {
-        // Update existing product
+    } else {
+      // Update existing product
         final updatedProduct = Product(
           id: widget.product!.id,
           name: name,
@@ -259,10 +259,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         final success = await _supabaseService.updateProduct(updatedProduct);
         
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Product updated successfully')),
-          );
-          Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product updated successfully')),
+        );
+    Navigator.of(context).pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to update product. Please try again.')),
@@ -301,24 +301,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product image
-                Center(
-                  child: GestureDetector(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product image
+              Center(
+                child: GestureDetector(
                     onTap: _showImagePickerOptions,
                     child: Stack(
                       children: [
                         Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
                             color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -347,11 +347,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                           child: _imageFile == null && (_imageUrl == null || _imageUrl!.contains('assets/images'))
                               ? const Center(
-                                  child: Icon(
-                                    Icons.add_a_photo,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
+                      child: Icon(
+                        Icons.add_a_photo,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
                                 )
                               : null,
                         ),
@@ -392,9 +392,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ),
                 if (_imageFile != null || (_imageUrl != null && !_imageUrl!.contains('assets/images')))
-                  Center(
+              Center(
                     child: TextButton.icon(
-                      onPressed: () {
+                  onPressed: () {
                         setState(() {
                           _imageFile = null;
                           if (widget.product == null) {
@@ -404,124 +404,124 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       },
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       label: const Text('Remove Image', style: TextStyle(color: Colors.red)),
-                    ),
-                  ),
-                
-                const SizedBox(height: 24),
-                
-                // Product details
-                TextFormField(
-                  controller: _nameController,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Product details
+              TextFormField(
+                controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Product Name',
+                  labelText: 'Product Name',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.shopping_bag_outlined),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a product name';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _descriptionController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a product name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
                   decoration: InputDecoration(
-                    labelText: 'Description',
+                  labelText: 'Description',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.description_outlined),
                     alignLabelWithHint: true,
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a description';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _priceController,
+                maxLines: 3,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a description';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
                   decoration: InputDecoration(
-                    labelText: 'Price (\$)',
+                  labelText: 'Price (\$)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.attach_money),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a price';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid price';
-                    }
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a price';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Please enter a valid price';
+                  }
                     if (double.tryParse(value)! <= 0) {
                       return 'Price must be greater than 0';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
                   decoration: InputDecoration(
-                    labelText: 'Category',
+                  labelText: 'Category',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.category_outlined),
-                  ),
-                  items: _categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedCategory = value;
-                      });
-                    }
-                  },
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedLocation,
+                  items: _categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedCategory = value;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedLocation,
                   decoration: InputDecoration(
-                    labelText: 'Market Location',
+                  labelText: 'Market Location',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: const Icon(Icons.location_on_outlined),
-                  ),
-                  items: _locations.map((location) {
-                    return DropdownMenuItem(
-                      value: location,
-                      child: Text(location),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedLocation = value;
-                      });
-                    }
-                  },
                 ),
-                
-                const SizedBox(height: 32),
-                
-                FilledButton.icon(
-                  onPressed: _saveProduct,
+                  items: _locations.map((location) {
+                  return DropdownMenuItem(
+                    value: location,
+                    child: Text(location),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedLocation = value;
+                    });
+                  }
+                },
+              ),
+              
+              const SizedBox(height: 32),
+              
+              FilledButton.icon(
+                onPressed: _saveProduct,
                   icon: _isUploading || _isLoading 
                       ? Container(
                           width: 24,
@@ -533,18 +533,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                         )
                       : const Icon(Icons.save),
-                  label: Text(widget.product == null ? 'Add Product' : 'Update Product'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56),
+                label: Text(widget.product == null ? 'Add Product' : 'Update Product'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }

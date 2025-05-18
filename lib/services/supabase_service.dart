@@ -341,22 +341,26 @@ class SupabaseService {
     String? businessAddress,
   }) async {
     try {
-      final data = {
-        if (phoneNumber != null) 'phone_number': phoneNumber,
-        if (whatsappNumber != null) 'whatsapp_number': whatsappNumber,
-        if (sellerBio != null) 'seller_bio': sellerBio,
-        if (businessName != null) 'business_name': businessName,
-        if (businessAddress != null) 'business_address': businessAddress,
-      };
+      // Call the SQL function that bypasses RLS
+      final result = await _client.rpc(
+        'update_seller_profile',
+        params: {
+          'p_seller_id': sellerId,
+          'p_phone_number': phoneNumber,
+          'p_whatsapp_number': whatsappNumber,
+          'p_seller_bio': sellerBio,
+          'p_business_name': businessName,
+          'p_business_address': businessAddress,
+        },
+      );
       
-      if (data.isEmpty) return true; // Nothing to update
-      
-      await _client
-          .from('users')
-          .update(data)
-          .eq('id', sellerId);
-      
-      return true;
+      if (result == true) {
+        debugPrint('Successfully updated seller profile for seller ID: $sellerId');
+        return true;
+      } else {
+        debugPrint('No changes were made to seller profile for seller ID: $sellerId');
+        return false;
+      }
     } catch (e) {
       debugPrint('Error updating seller profile: $e');
       return false;
