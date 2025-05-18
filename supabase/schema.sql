@@ -1,6 +1,23 @@
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Add shipping columns to orders table if they don't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'shipping_name') THEN
+        ALTER TABLE public.orders ADD COLUMN shipping_name TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'shipping_email') THEN
+        ALTER TABLE public.orders ADD COLUMN shipping_email TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'shipping_phone') THEN
+        ALTER TABLE public.orders ADD COLUMN shipping_phone TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'shipping_address') THEN
+        ALTER TABLE public.orders ADD COLUMN shipping_address TEXT;
+    END IF;
+END $$;
+
 -- Storage buckets for product images
 INSERT INTO storage.buckets (id, name, public) VALUES ('products', 'products', true)
 ON CONFLICT (id) DO NOTHING;
