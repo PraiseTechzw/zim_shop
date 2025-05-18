@@ -5,6 +5,9 @@ import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/providers/theme_provider.dart';
 import 'package:zim_shop/screen/auth/login_screen.dart';
+import 'package:zim_shop/screen/buyer_main_screen.dart';
+import 'package:zim_shop/screen/seller_main_screen.dart';
+import 'package:zim_shop/screen/admin_main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,10 +31,6 @@ class ZimMarketApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     
-    // Check if user is already logged in
-    final appState = Provider.of<AppState>(context, listen: false);
-    appState.checkCurrentUser();
-    
     return MaterialApp(
       title: 'ZimMarket',
       debugShowCheckedModeBanner: false,
@@ -50,7 +49,73 @@ class ZimMarketApp extends StatelessWidget {
         ),
       ),
       themeMode: themeProvider.themeMode,
-      home: const LoginScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthState();
+  }
+
+  Future<void> _checkAuthState() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.checkCurrentUser();
+
+    if (appState.isLoggedIn) {
+      // If user is logged in, load the cart data
+      final cartProvider = Provider.of<CartProvider>(context, listen: false);
+      await cartProvider.loadCart();
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    final appState = Provider.of<AppState>(context);
+    
+    if (!appState.isLoggedIn) {
+      return const LoginScreen();
+    }
+
+    // Navigate based on user role
+    switch (appState.currentRole) {
+      case UserRole.buyer:
+        return const BuyerMainScreen();
+      case UserRole.seller:
+        return const SellerMainScreen();
+      case UserRole.admin:
+        return const AdminMainScreen();
+      default:
+        // Fallback to login screen if role is not recognized
+        return const LoginScreen();
+    }
   }
 }

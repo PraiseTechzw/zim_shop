@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zim_shop/providers/app_state.dart';
+import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/buyer_main_screen.dart';
 import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
@@ -50,6 +51,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = await appState.login(email, password);
       
       if (!mounted) return;
+      
+      // Load user's cart after successful login
+      final cartProvider = Provider.of<CartProvider>(context, listen: false);
+      await cartProvider.loadCart();
       
       // Navigate based on user role
       switch (user.role) {
