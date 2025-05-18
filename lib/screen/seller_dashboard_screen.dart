@@ -4,7 +4,6 @@ import 'package:zim_shop/models/order.dart';
 import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/services/supabase_service.dart';
-import 'package:zim_shop/widgets/dashboard_card.dart';
 import 'package:zim_shop/screen/add_product_screen.dart';
 import 'package:zim_shop/screen/seller_orders_screen.dart';
 import 'package:zim_shop/screen/seller_products_screen.dart';
@@ -92,8 +91,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
   
   void _navigateToProducts() {
-    // In a bottom navigation setup, we'd typically use the tab switching instead
-    // But for direct navigation from within tabs, we can use regular navigation
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SellerProductsScreen()),
     );
