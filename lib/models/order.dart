@@ -11,6 +11,8 @@ class Order {
   final String? shippingAddress;
   final String? shippingPhone;
   final String? shippingEmail;
+  final String? shippingCity;
+  final String? shippingPostalCode;
   
   Order({
     required this.id,
@@ -23,6 +25,8 @@ class Order {
     this.shippingAddress,
     this.shippingPhone,
     this.shippingEmail,
+    this.shippingCity,
+    this.shippingPostalCode,
   }) : _items = items ?? [];
 
   List<CartItem> get items => _items;
@@ -42,6 +46,8 @@ class Order {
       shippingAddress: json['shipping_address'] as String?,
       shippingPhone: json['shipping_phone'] as String?,
       shippingEmail: json['shipping_email'] as String?,
+      shippingCity: json['shipping_city'] as String?,
+      shippingPostalCode: json['shipping_postal_code'] as String?,
     );
   }
 
@@ -56,6 +62,8 @@ class Order {
       'shipping_address': shippingAddress,
       'shipping_phone': shippingPhone,
       'shipping_email': shippingEmail,
+      'shipping_city': shippingCity,
+      'shipping_postal_code': shippingPostalCode,
     };
   }
 }

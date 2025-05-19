@@ -99,17 +99,21 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: widget.order.status == 'Delivered'
+                                color: widget.order.status == 'completed'
                                     ? Colors.green.withOpacity(0.1)
-                                    : Colors.orange.withOpacity(0.1),
+                                    : widget.order.status == 'processing'
+                                        ? Colors.blue.withOpacity(0.1)
+                                        : Colors.orange.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                widget.order.status,
+                                widget.order.status.toUpperCase(),
                                 style: TextStyle(
-                                  color: widget.order.status == 'Delivered'
+                                  color: widget.order.status == 'completed'
                                       ? Colors.green
-                                      : Colors.orange,
+                                      : widget.order.status == 'processing'
+                                          ? Colors.blue
+                                          : Colors.orange,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -120,19 +124,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         if (widget.isSellerView)
                           Row(
                             children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => _updateOrderStatus('Processing'),
-                                  child: const Text('Mark as Processing'),
+                              if (widget.order.status == 'pending')
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => _updateOrderStatus('processing'),
+                                    child: const Text('Mark as Processing'),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: FilledButton(
-                                  onPressed: () => _updateOrderStatus('Delivered'),
-                                  child: const Text('Mark as Delivered'),
+                              if (widget.order.status == 'processing') ...[
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed: () => _updateOrderStatus('completed'),
+                                    child: const Text('Mark as Completed'),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                       ],
@@ -280,7 +287,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -293,7 +300,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ),
           ),
           Text(
-            value,
+            value ?? 'Not specified',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),
