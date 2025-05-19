@@ -89,15 +89,30 @@ class OrderCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
-                      Text('${item.quantity}x'),
+                      SizedBox(
+                        width: 40,
+                        child: Text(
+                          '${item.quantity}x',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(item.product.name),
+                        child: Text(
+                          item.product.name,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
-                      Text(
-                        '\$${(item.product.price * item.quantity).toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 80,
+                        child: Text(
+                          '\$${(item.product.price * item.quantity).toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.right,
                         ),
                       ),
                     ],
