@@ -52,57 +52,85 @@ class _BuyerMainScreenState extends State<BuyerMainScreen> {
         ],
       ),
       body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        elevation: 8,
-        height: 65,
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        animationDuration: const Duration(milliseconds: 500),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              label: Consumer<CartProvider>(
-                builder: (context, cart, _) => Text(
-                  cart.itemCount?.toString() ?? '0',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              isLabelVisible: true,
-              child: const Icon(Icons.shopping_cart_outlined),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
             ),
-            selectedIcon: Badge(
-              label: Consumer<CartProvider>(
-                builder: (context, cart, _) => Text(
-                  cart.itemCount?.toString() ?? '0',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              isLabelVisible: true,
-              child: const Icon(Icons.shopping_cart),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
+                _buildNavItem(1, Icons.shopping_cart_outlined, Icons.shopping_cart, 'Cart'),
+                _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long, 'Orders'),
+                _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
+              ],
             ),
-            label: 'Cart',
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.receipt_long_outlined),
-            selectedIcon: const Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: const Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData selectedIcon, String label) {
+    final isSelected = _selectedIndex == index;
+    final color = isSelected 
+        ? Theme.of(context).colorScheme.primary 
+        : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (index == 1) // Cart item with badge
+              Badge(
+                label: Consumer<CartProvider>(
+                  builder: (context, cart, _) => Text(
+                    cart.itemCount?.toString() ?? '0',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                isLabelVisible: true,
+                child: Icon(
+                  isSelected ? selectedIcon : icon,
+                  color: color,
+                ),
+              )
+            else
+              Icon(
+                isSelected ? selectedIcon : icon,
+                color: color,
+              ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

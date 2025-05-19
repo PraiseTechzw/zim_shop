@@ -112,39 +112,70 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
         ],
       ),
       body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        elevation: 8,
-        height: 65,
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        animationDuration: const Duration(milliseconds: 500),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+                _buildNavItem(1, Icons.inventory_2_outlined, Icons.inventory_2, 'Products'),
+                _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long, 'Orders'),
+                _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
-            label: 'Products',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData selectedIcon, String label) {
+    final isSelected = _selectedIndex == index;
+    final color = isSelected 
+        ? Theme.of(context).colorScheme.primary 
+        : Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? selectedIcon : icon,
+              color: color,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
