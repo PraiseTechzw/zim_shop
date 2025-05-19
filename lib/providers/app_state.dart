@@ -23,6 +23,7 @@ class AppState extends ChangeNotifier {
   bool _isPasswordRecovery = false;
   String? _lastError;
   bool _isInitialized = false;
+  bool _autoApproveSellers = false;
   
   final SupabaseService _supabaseService = SupabaseService();
 
@@ -46,6 +47,7 @@ class AppState extends ChangeNotifier {
   bool get isPasswordRecovery => _isPasswordRecovery;
   String? get lastError => _lastError;
   bool get isInitialized => _isInitialized;
+  bool get autoApproveSellers => _autoApproveSellers;
   
   // Check if seller profile is complete
   bool get isSellerProfileComplete => 
@@ -76,6 +78,11 @@ class AppState extends ChangeNotifier {
       // Check authentication state
       await checkAuthState();
       
+      // Load admin settings
+      if (isAdmin) {
+        await _loadAdminSettings();
+      }
+      
       _isInitialized = true;
       notifyListeners();
       debugPrint('AppState initialized successfully');
@@ -83,6 +90,31 @@ class AppState extends ChangeNotifier {
       _lastError = e.toString();
       debugPrint('Error initializing AppState: $_lastError');
       notifyListeners();
+    }
+  }
+
+  // Load admin settings
+  Future<void> _loadAdminSettings() async {
+    try {
+      final settings = await _supabaseService.getAdminSettings();
+      _autoApproveSellers = settings['auto_approve_sellers'] ?? false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading admin settings: $e');
+    }
+  }
+
+  // Update admin settings
+  Future<void> updateAdminSettings(Map<String, dynamic> settings) async {
+    try {
+      await _supabaseService.updateAdminSettings(settings);
+      if (settings.containsKey('auto_approve_sellers')) {
+        _autoApproveSellers = settings['auto_approve_sellers'];
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error updating admin settings: $e');
+      rethrow;
     }
   }
 

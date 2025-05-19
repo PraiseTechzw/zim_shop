@@ -81,7 +81,10 @@ class SupabaseService {
     final supabaseUser = _client.auth.currentUser;
     if (supabaseUser == null) return null;
     
-    // Fetch user data from 'users' table to get role and other details
+    // First ensure the user exists in the database
+    await ensureUserExistsInDatabase();
+    
+    // Then fetch user data from 'users' table to get role and other details
     return await _getUserDetails(supabaseUser.id);
   }
   
@@ -93,93 +96,102 @@ class SupabaseService {
     required UserRole role
   }) async {
     if (!_isInitialized) {
+      debugPrint('❌ Signup failed: SupabaseService not initialized');
       return AuthResult(error: 'SupabaseService not initialized');
     }
     
     try {
-      // 1. Create auth user with role in user metadata
-      final response = await _client.auth.signUp(
-        email: email,
-        password: password,
-        data: {
-          'username': username,
-          'role': role.toString().split('.').last,
-        }
+      debugPrint('🔄 Starting signup process for user: $email');
+      
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+      
+      // 1. Create auth user with metadata
+      debugPrint('📝 Creating auth user...');
+      
+      final response = await serviceClient.auth.admin.createUser(
+        AdminUserAttributes(
+          email: email,
+          password: password,
+          emailConfirm: true,
+          userMetadata: {
+            'username': username,
+            'role': role.toString().split('.').last,
+          },
+        ),
       );
       
       if (response.user == null) {
+        debugPrint('❌ Auth user creation failed: No user returned from signUp');
         return AuthResult(error: 'Failed to create user');
       }
       
-      // 2. Add user details to 'users' table using a direct SQL insertion
-      // This avoids the RLS policies by using a special pgFunction
+      debugPrint('✅ Auth user created successfully with ID: ${response.user!.id}');
+      
+      // 2. Add user to database using service role client
       try {
-        // Call a custom PostgreSQL function that bypasses RLS
-        final result = await _client.rpc(
-          'insert_new_user',
-          params: {
-            'user_id': response.user!.id,
-            'user_email': email,
-            'user_name': username,
-            'user_role': role.toString().split('.').last,
-            'is_user_approved': role != UserRole.seller, // Sellers need approval
-          },
-        );
-        
-        debugPrint('Successfully added user details to users table via RPC');
-      } catch (e) {
-        // Log the error for debugging
-        debugPrint('Failed to insert user details via RPC: $e');
-        
-        // If RPC fails, create a basic user from auth user data
-        if (response.session == null) {
-          return AuthResult(
-            user: User(
-              id: response.user!.id,
-              username: username,
-              email: email,
-              password: '',
-              role: role,
-              isApproved: role != UserRole.seller,
-            ),
-            requiresEmailConfirmation: true,
-          );
-        } else {
-          return AuthResult(
-            user: User(
-              id: response.user!.id,
-              username: username,
-              email: email,
-              password: '',
-              role: role,
-              isApproved: role != UserRole.seller,
-            ),
-          );
-        }
+        debugPrint('🔄 Adding user to database...');
+            final insertResult = await serviceClient.from('users').insert({
+              'id': response.user!.id,
+              'email': email,
+              'username': username,
+              'role': role.toString().split('.').last,
+              'is_approved': role != UserRole.seller,
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            }).select();
+            
+            debugPrint('📝 Insert result: $insertResult');
+            debugPrint('✅ User added to database successfully');
+          } catch (insertError) {
+            debugPrint('❌ Error inserting user: $insertError');
+            if (insertError is PostgrestException) {
+              debugPrint('  - Code: ${insertError.code}');
+              debugPrint('  - Message: ${insertError.message}');
+              debugPrint('  - Details: ${insertError.details}');
+            }
+        // Continue anyway as we can try to add the user later
       }
       
-      // 3. Check if email confirmation is required
-      if (response.session == null) {
-        // Email confirmation is required
-        return AuthResult(
-          user: User(
-            id: response.user!.id,
-            username: username,
-            email: email,
-            password: '',
-            role: role,
-          ),
-          error: 'Please check your email to confirm your account.',
-          requiresEmailConfirmation: true,
-        );
-      }
-      
-      // 4. Get complete user data
+      // 3. Get complete user data using service role client
       User? user;
       try {
-        user = await _getUserDetails(response.user!.id);
+        debugPrint('🔄 Fetching complete user details for ID: ${response.user!.id}');
+        final userData = await serviceClient
+            .from('users')
+            .select()
+            .eq('id', response.user!.id)
+            .single();
+            
+        if (userData != null) {
+          user = User(
+            id: userData['id'],
+            username: userData['username'],
+            email: userData['email'],
+            password: '',
+            role: UserRole.values.firstWhere(
+              (r) => r.toString().split('.').last == userData['role'],
+              orElse: () => UserRole.buyer,
+            ),
+            isApproved: userData['is_approved'] ?? false,
+            phoneNumber: userData['phone_number'],
+            whatsappNumber: userData['whatsapp_number'],
+            sellerBio: userData['seller_bio'],
+            sellerRating: userData['seller_rating'] != null 
+                ? (userData['seller_rating'] as num).toDouble() 
+                : null,
+            businessName: userData['business_name'],
+            businessAddress: userData['business_address'],
+          );
+        }
+        debugPrint('✅ Successfully fetched user details');
+        debugPrint('📝 User details: {id: ${user?.id}, username: ${user?.username}, email: ${user?.email}, role: ${user?.role}, isApproved: ${user?.isApproved}}');
       } catch (e) {
-        // If we can't get user details, create a basic user object
+        debugPrint('❌ Error fetching user details: $e');
+        // Create basic user object as fallback
         user = User(
           id: response.user!.id,
           username: username,
@@ -188,31 +200,13 @@ class SupabaseService {
           role: role,
           isApproved: role != UserRole.seller,
         );
+        debugPrint('📝 Created basic user object as fallback');
       }
       
+      debugPrint('✅ Signup process completed successfully for user: $email');
       return AuthResult(user: user);
-    } on PostgrestException catch (e) {
-      debugPrint('PostgrestException during signup: ${e.message}, code: ${e.code}, details: ${e.details}');
-      if (e.message.contains('recursion') || e.message.contains('violates row-level security policy')) {
-        // This means the auth user was created but we couldn't update the profile
-        // We'll return a success with a warning
-        return AuthResult(
-          error: 'Account created but profile setup incomplete. Please contact support.',
-          requiresEmailConfirmation: true,
-        );
-      }
-      return AuthResult(error: e.message);
-    } on AuthException catch (e) {
-      if (e.message.contains('Email not confirmed')) {
-        return AuthResult(
-          error: 'Please check your email to confirm your account.',
-          requiresEmailConfirmation: true,
-        );
-      }
-      debugPrint('AuthException during signup: ${e.message}');
-      return AuthResult(error: e.message);
     } catch (e) {
-      debugPrint('Unknown error during signup: $e');
+      debugPrint('❌ Error during signup: $e');
       return AuthResult(error: e.toString());
     }
   }
@@ -258,8 +252,14 @@ class SupabaseService {
   // Helper method to fetch user details from 'users' table
   Future<User?> _getUserDetails(String userId) async {
     try {
+      // Use service role client for fetching user details
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+
       // Get user details directly from the users table
-      final response = await _client
+      final response = await serviceClient
           .from('users')
           .select()
           .eq('id', userId)
@@ -384,25 +384,40 @@ class SupabaseService {
     try {
       final response = await _client
           .from('products')
-          .select('*, seller:seller_id(id, username, email, is_approved, phone_number, whatsapp_number, seller_bio, seller_rating, business_name, business_address)')
+          .select('''
+            *,
+            seller:users!products_seller_id_fkey (
+              id,
+              username,
+              email,
+              is_approved,
+              phone_number,
+              whatsapp_number,
+              seller_bio,
+              business_name,
+              business_address
+            )
+          ''')
           .order('created_at', ascending: false);
+      
+      debugPrint('Raw product data from database:');
+      for (var item in response) {
+        debugPrint('Product ID: ${item['id']}');
+        debugPrint('Seller ID: ${item['seller_id']}');
+        debugPrint('Seller Data: ${item['seller']}');
+      }
       
       return response.map<Product>((item) {
         // Use null-safe access and provide default values
         final sellerId = item['seller_id'] as String? ?? '';
         final sellerData = item['seller'] as Map<String, dynamic>?;
-        final sellerName = sellerData != null ? (sellerData['username'] as String? ?? 'Unknown Seller') : 'Unknown Seller';
-        final sellerEmail = sellerData != null ? sellerData['email'] as String? : null;
-        final sellerIsVerified = sellerData != null ? sellerData['is_approved'] as bool? ?? false : false;
         
-        // Get seller rating from the database or use default
-        final sellerRating = sellerData != null && sellerData['seller_rating'] != null
-            ? (sellerData['seller_rating'] as num).toDouble()
-            : 4.5; // Default rating if not available
-        
-        // Get WhatsApp number for contact integration
-        final whatsappNumber = sellerData != null ? sellerData['whatsapp_number'] as String? : null;
-        final businessName = sellerData != null ? sellerData['business_name'] as String? : null;
+        // Get seller information with proper null handling
+        final sellerUsername = sellerData?['username'] as String? ?? 'Unknown Seller';
+        final sellerEmail = sellerData?['email'] as String?;
+        final sellerIsVerified = sellerData?['is_approved'] as bool? ?? false;
+        final whatsappNumber = sellerData?['whatsapp_number'] as String?;
+        final businessName = sellerData?['business_name'] as String?;
         
         return Product(
           id: item['id'] as String? ?? '',
@@ -413,15 +428,20 @@ class SupabaseService {
           category: item['category'] as String? ?? 'Uncategorized',
           location: item['location'] as String? ?? 'Unknown Location',
           sellerId: sellerId,
-          sellerName: businessName ?? sellerName, // Use business name if available
+          sellerName: businessName,
+          sellerUsername: sellerUsername,
           sellerEmail: sellerEmail,
-          sellerRating: sellerRating,
           sellerIsVerified: sellerIsVerified,
           sellerWhatsapp: whatsappNumber,
         );
       }).toList();
     } catch (e) {
       debugPrint('Error fetching products: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+      }
       return [];
     }
   }
@@ -446,18 +466,20 @@ class SupabaseService {
   
   Future<bool> updateProduct(Product product) async {
     try {
-      await _client
+      final response = await _client
           .from('products')
           .update({
             'name': product.name,
             'description': product.description,
             'price': product.price,
-            'image_url': product.imageUrl,
             'category': product.category,
             'location': product.location,
+            'is_active': product.isActive,
+            'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', product.id);
-      return true;
+      
+      return response != null;
     } catch (e) {
       debugPrint('Error updating product: $e');
       return false;
@@ -466,13 +488,19 @@ class SupabaseService {
   
   Future<bool> deleteProduct(String productId) async {
     try {
-      // Delete product
+      // First delete any associated order items
       await _client
+          .from('order_items')
+          .delete()
+          .eq('product_id', productId);
+      
+      // Then delete the product
+      final response = await _client
           .from('products')
           .delete()
           .eq('id', productId);
       
-      return true;
+      return response != null;
     } catch (e) {
       debugPrint('Error deleting product: $e');
       return false;
@@ -615,13 +643,60 @@ class SupabaseService {
   // ADMIN METHODS
   Future<bool> approveUser(String userId, bool isApproved) async {
     try {
-      await _client
+      debugPrint('🔄 Updating seller approval status for user: $userId');
+      
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+      
+      // 1. Update the user's approval status in the database
+      final updateResult = await serviceClient
           .from('users')
-          .update({'is_approved': isApproved})
-          .eq('id', userId);
+          .update({
+            'is_approved': isApproved,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', userId)
+          .select();
+          
+      if (updateResult.isEmpty) {
+        debugPrint('❌ Failed to update user approval status: No rows affected');
+        return false;
+      }
+      
+      debugPrint('✅ Successfully updated user approval status in database');
+      
+      // 2. If the user is currently logged in, update their session
+      final currentUser = _client.auth.currentUser;
+      if (currentUser != null && currentUser.id == userId) {
+        try {
+          // Update the user's metadata to reflect the new approval status
+          await serviceClient.auth.admin.updateUserById(
+            userId,
+            attributes: AdminUserAttributes(
+              userMetadata: {
+                ...currentUser.userMetadata ?? {},
+                'is_approved': isApproved,
+              },
+            ),
+          );
+          debugPrint('✅ Successfully updated user metadata');
+        } catch (e) {
+          debugPrint('⚠️ Warning: Failed to update user metadata: $e');
+          // Continue anyway as the database update was successful
+        }
+      }
+      
       return true;
     } catch (e) {
-      debugPrint('Error approving user: $e');
+      debugPrint('❌ Error updating seller approval status: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+      }
       return false;
     }
   }
@@ -731,6 +806,325 @@ class SupabaseService {
     } catch (e) {
       debugPrint('Error fetching users: $e');
       return [];
+    }
+  }
+
+  // Add this new method
+  Future<bool> ensureUserExistsInDatabase() async {
+    try {
+      final currentUser = _client.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ No user is currently logged in');
+        return false;
+      }
+
+      debugPrint('🔄 Checking if user ${currentUser.id} exists in database...');
+      
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+
+      // Check if user exists in database
+      final existingUser = await serviceClient
+          .from('users')
+          .select()
+          .eq('id', currentUser.id)
+          .maybeSingle();
+          
+      debugPrint('📝 Database check result: ${existingUser != null ? 'User found' : 'User not found'}');
+      
+      if (existingUser == null) {
+        debugPrint('⚠️ User not found in database, adding now...');
+        try {
+          // Get role from metadata or default to buyer
+          final role = currentUser.userMetadata?['role'] ?? 'buyer';
+          final username = currentUser.userMetadata?['username'] ?? 
+                          currentUser.email?.split('@').first ?? 
+                          'user_${currentUser.id.substring(0, 8)}';
+          
+          final insertResult = await serviceClient.from('users').insert({
+            'id': currentUser.id,
+            'email': currentUser.email,
+            'username': username,
+            'role': role,
+            'is_approved': role != 'seller',
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).select();
+          
+          debugPrint('📝 Insert result: $insertResult');
+          debugPrint('✅ User added to database successfully');
+          return true;
+        } catch (insertError) {
+          debugPrint('❌ Error inserting user: $insertError');
+          if (insertError is PostgrestException) {
+            debugPrint('  - Code: ${insertError.code}');
+            debugPrint('  - Message: ${insertError.message}');
+            debugPrint('  - Details: ${insertError.details}');
+          }
+          return false;
+        }
+      }
+      
+      debugPrint('✅ User already exists in database');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error ensuring user exists in database: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+      }
+      return false;
+    }
+  }
+
+  // Add this new method to create an admin account
+  Future<AuthResult> createAdminAccount({
+    required String email,
+    required String password,
+    required String username,
+  }) async {
+    if (!_isInitialized) {
+      debugPrint('❌ Admin creation failed: SupabaseService not initialized');
+      return AuthResult(error: 'SupabaseService not initialized');
+    }
+    
+    try {
+      debugPrint('🔄 Starting admin account creation for: $email');
+      
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+      
+      // 1. Create auth user with admin metadata
+      debugPrint('📝 Creating auth user...');
+      
+      final response = await serviceClient.auth.admin.createUser(
+        AdminUserAttributes(
+          email: email,
+          password: password,
+          emailConfirm: true,
+          userMetadata: {
+            'username': username,
+            'role': 'admin',
+          },
+        ),
+      );
+      
+      if (response.user == null) {
+        debugPrint('❌ Admin user creation failed: No user returned');
+        return AuthResult(error: 'Failed to create admin user');
+      }
+      
+      debugPrint('✅ Admin auth user created successfully with ID: ${response.user!.id}');
+      
+      // 2. Add admin user to database
+      try {
+        debugPrint('🔄 Adding admin to database...');
+        final insertResult = await serviceClient.from('users').insert({
+          'id': response.user!.id,
+          'email': email,
+          'username': username,
+          'role': 'admin',
+          'is_approved': true,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        }).select();
+        
+        debugPrint('📝 Insert result: $insertResult');
+        debugPrint('✅ Admin added to database successfully');
+      } catch (insertError) {
+        debugPrint('❌ Error inserting admin to database: $insertError');
+        if (insertError is PostgrestException) {
+          debugPrint('  - Code: ${insertError.code}');
+          debugPrint('  - Message: ${insertError.message}');
+          debugPrint('  - Details: ${insertError.details}');
+        }
+        // Continue anyway as we can try to add the user later
+      }
+      
+      // 3. Get complete user data
+      User? user;
+      try {
+        debugPrint('🔄 Fetching admin details...');
+        user = await _getUserDetails(response.user!.id);
+        debugPrint('✅ Successfully fetched admin details');
+      } catch (e) {
+        debugPrint('❌ Error fetching admin details: $e');
+        // Create basic admin user object
+        user = User(
+          id: response.user!.id,
+          username: username,
+          email: email,
+          password: '',
+          role: UserRole.admin,
+          isApproved: true,
+        );
+        debugPrint('📝 Created basic admin user object as fallback');
+      }
+      
+      debugPrint('✅ Admin account creation completed successfully');
+      return AuthResult(user: user);
+    } catch (e) {
+      debugPrint('❌ Error creating admin account: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+      }
+      return AuthResult(error: e.toString());
+    }
+  }
+
+  Future<List<Order>> getOrders() async {
+    try {
+      final response = await _client
+          .from('orders')
+          .select('''
+            *,
+            order_items (
+              id,
+              product_id,
+              quantity,
+              price,
+              products (
+                id,
+                name,
+                description,
+                price,
+                image_url,
+                location,
+                category,
+                seller_id,
+                is_active,
+                created_at,
+                updated_at
+              )
+            )
+          ''')
+          .order('created_at', ascending: false);
+      
+      return response.map<Order>((item) {
+        final items = (item['order_items'] as List).map((i) {
+          final productData = i['products'];
+          final product = Product(
+            id: productData['id'],
+            name: productData['name'],
+            description: productData['description'],
+            price: (productData['price'] as num).toDouble(),
+            imageUrl: productData['image_url'],
+            location: productData['location'],
+            category: productData['category'],
+            sellerId: productData['seller_id'],
+            isActive: productData['is_active'],
+            createdAt: productData['created_at'],
+            updatedAt: productData['updated_at'],
+          );
+          
+          return CartItem(
+            product: product,
+            quantity: i['quantity'],
+          );
+        }).toList();
+        
+        return Order(
+          id: item['id'],
+          userId: item['user_id'],
+          items: items,
+          totalAmount: (item['total_amount'] as num).toDouble(),
+          date: DateTime.parse(item['created_at']),
+          status: item['status'],
+          shippingName: item['shipping_name'],
+          shippingAddress: item['shipping_address'],
+          shippingPhone: item['shipping_phone'],
+          shippingEmail: item['shipping_email'],
+          shippingCity: item['shipping_city'],
+          shippingPostalCode: item['shipping_postal_code'],
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching orders: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> getAdminSettings() async {
+    try {
+      final response = await _client
+          .from('admin_settings')
+          .select()
+          .single();
+      
+      return response ?? {};
+    } catch (e) {
+      debugPrint('Error fetching admin settings: $e');
+      return {};
+    }
+  }
+  
+  Future<bool> updateAdminSettings(Map<String, dynamic> settings) async {
+    try {
+      final response = await _client
+          .from('admin_settings')
+          .upsert(settings)
+          .select()
+          .single();
+      
+      return response != null;
+    } catch (e) {
+      debugPrint('Error updating admin settings: $e');
+      return false;
+    }
+  }
+  
+  Future<bool> updateAdminPassword(String newPassword) async {
+    try {
+      final response = await _client.auth.updateUser(
+        UserAttributes(
+          password: newPassword,
+        ),
+      );
+      
+      return response.user != null;
+    } catch (e) {
+      debugPrint('Error updating admin password: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateBuyerProfile({
+    required String buyerId,
+    String? phoneNumber,
+    String? whatsappNumber,
+    String? deliveryAddress,
+  }) async {
+    try {
+      // Call the SQL function that bypasses RLS
+      final result = await _client.rpc(
+        'update_buyer_profile',
+        params: {
+          'p_buyer_id': buyerId,
+          'p_phone_number': phoneNumber,
+          'p_whatsapp_number': whatsappNumber,
+          'p_delivery_address': deliveryAddress,
+        },
+      );
+      
+      if (result == true) {
+        debugPrint('Successfully updated buyer profile for buyer ID: $buyerId');
+        return true;
+      } else {
+        debugPrint('No changes were made to buyer profile for buyer ID: $buyerId');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error updating buyer profile: $e');
+      return false;
     }
   }
 } 

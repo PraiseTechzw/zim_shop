@@ -223,13 +223,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
   
   Widget _buildSellerInfoSection(ThemeData theme) {
+    debugPrint('Product Details - Seller Info:');
+    debugPrint('  - Seller Name: ${widget.product.sellerName}');
+    debugPrint('  - Seller Username: ${widget.product.sellerUsername}');
+    debugPrint('  - Seller ID: ${widget.product.sellerId}');
+    debugPrint('  - Seller Email: ${widget.product.sellerEmail}');
+    debugPrint('  - Seller WhatsApp: ${widget.product.sellerWhatsapp}');
+    debugPrint('  - Seller Verified: ${widget.product.sellerIsVerified}');
+
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
-      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -242,23 +252,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              // Show verification badge if seller is verified
-              if (widget.product.sellerIsVerified == true)
+              if (widget.product.sellerIsVerified ?? false)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.verified,
-                        size: 14,
-                        color: Colors.green,
-                      ),
+                      Icon(Icons.verified, color: Colors.green, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'Verified',
@@ -272,9 +276,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
-          // Seller name
+          // Seller information
           Row(
             children: [
               Icon(Icons.person, 
@@ -282,15 +286,30 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 size: 18,
               ),
               const SizedBox(width: 8),
-              Text(
-                widget.product.sellerName ?? 'Unknown Seller',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.product.sellerUsername ?? 'Unknown Seller',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (widget.product.sellerName != null)
+                      Text(
+                        'Business: ${widget.product.sellerName}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          
+          const SizedBox(height: 12),
           
           // Seller email if available
           if (widget.product.sellerEmail != null)
@@ -303,49 +322,33 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     size: 18,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    widget.product.sellerEmail!,
-                    style: theme.textTheme.bodyMedium,
+                  Expanded(
+                    child: Text(
+                      widget.product.sellerEmail!,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ),
                 ],
               ),
             ),
           
-          // Seller ID (for admin/reference purposes)
-          Row(
-            children: [
-              Icon(Icons.badge, 
-                color: theme.colorScheme.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'ID: ${widget.product.sellerId != null ? '${widget.product.sellerId!.substring(0, Math.min(8, widget.product.sellerId!.length))}...' : 'Unknown'}',
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          
-          // Seller rating if available
-          if (widget.product.sellerRating != null)
+          // Seller WhatsApp if available
+          if (widget.product.sellerWhatsapp != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Row(
                 children: [
-                  Icon(Icons.star, 
-                    color: Colors.amber,
+                  FaIcon(FontAwesomeIcons.whatsapp, 
+                    color: Colors.green,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${widget.product.sellerRating!.toStringAsFixed(1)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      widget.product.sellerWhatsapp!,
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  _buildRatingStars(widget.product.sellerRating!),
                 ],
               ),
             ),
@@ -353,57 +356,32 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           const SizedBox(height: 16),
           
           // Contact buttons
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              // WhatsApp contact button if available
-              if (widget.product.sellerWhatsapp != null)
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.4,
-                  child: _buildWhatsAppButton(theme),
-                ),
-                
-              // General contact button or full-width button if WhatsApp not available
-              SizedBox(
-                width: widget.product.sellerWhatsapp != null
-                    ? MediaQuery.of(context).size.width * 0.4
-                    : double.infinity,
-                child: _buildContactButton(theme),
+          if (widget.product.sellerWhatsapp != null)
+            FilledButton.icon(
+              onPressed: () => _contactSellerViaWhatsApp(),
+              icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
+              label: const Text('Contact via WhatsApp'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size(double.infinity, 0),
               ),
-            ],
-          ),
+            ),
+          
+          if (widget.product.sellerEmail != null) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _contactSeller(),
+              icon: const FaIcon(FontAwesomeIcons.envelope, size: 16),
+              label: const Text('Contact via Email'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size(double.infinity, 0),
+              ),
+            ),
+          ],
         ],
-      ),
-    );
-  }
-  
-  // WhatsApp button
-  Widget _buildWhatsAppButton(ThemeData theme) {
-    return ElevatedButton.icon(
-      onPressed: () => _contactSellerViaWhatsApp(),
-      icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 16),
-      label: const Text('WhatsApp', style: TextStyle(fontSize: 12)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
-  }
-  
-  // Regular contact button
-  Widget _buildContactButton(ThemeData theme) {
-    return OutlinedButton.icon(
-      onPressed: () => _contactSeller(),
-      icon: const FaIcon(FontAwesomeIcons.message, size: 16),
-      label: const Text('Contact', style: TextStyle(fontSize: 12)),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
@@ -430,8 +408,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         }
       }
       
-      // Create message template
-      final message = 'Hello, I am interested in your product "${widget.product.name}" on ZimMarket. Is it still available?';
+      // Create message template with more details
+      final message = '''
+Hello, I am interested in your product "${widget.product.name}" on ZimMarket.
+
+Product Details:
+- Price: \$${widget.product.price.toStringAsFixed(2)}
+- Location: ${widget.product.location ?? 'Not specified'}
+
+Is this product still available?''';
       
       // Try different URL formats
       final urls = [
@@ -591,25 +576,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
   
-  // Helper method to build rating stars
-  Widget _buildRatingStars(double rating) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        if (index < rating.floor()) {
-          // Full star
-          return FaIcon(FontAwesomeIcons.solidStar, color: Colors.amber, size: 14);
-        } else if (index < rating.ceil() && index > rating.floor()) {
-          // Half star
-          return FaIcon(FontAwesomeIcons.starHalfStroke, color: Colors.amber, size: 14);
-        } else {
-          // Empty star
-          return FaIcon(FontAwesomeIcons.star, color: Colors.amber, size: 14);
-        }
-      }),
-    );
-  }
-
   // Default product image widget
   Widget _buildDefaultProductImage(ThemeData theme) {
     return Container(

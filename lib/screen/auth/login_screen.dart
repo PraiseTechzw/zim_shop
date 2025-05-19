@@ -4,6 +4,8 @@ import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/screen/auth/register_screen.dart';
 import 'package:zim_shop/screen/auth/forgot_password_screen.dart';
 import 'package:zim_shop/widgets/theme_toggle_button.dart';
+import 'package:zim_shop/screen/seller_onboarding_screen.dart';
+import 'package:zim_shop/screen/buyer_onboarding_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -49,6 +51,58 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       
       if (success) {
+        final user = appState.currentUser;
+        if (user == null) {
+          setState(() {
+            _errorMessage = 'Failed to get user information. Please try again.';
+          });
+          return;
+        }
+
+        // Check if user is an unapproved seller
+        if (user.role == UserRole.seller && !user.isApproved) {
+          setState(() {
+            _errorMessage = 'Your seller account is pending approval. Please wait for admin approval.';
+          });
+          await appState.logout(); // Log them out
+          return;
+        }
+
+        // Check if user needs to complete their profile
+        if (user.role == UserRole.seller && !user.hasCompleteSellerProfile) {
+          // Navigate to seller onboarding
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => SellerOnboardingScreen(
+                user: user,
+                onCompleted: () {
+                  appState.refreshUser().then((_) {
+                    Navigator.of(context).pushReplacementNamed('/');
+                  });
+                },
+              ),
+            ),
+          );
+          return;
+        }
+
+        if (user.role == UserRole.buyer && !user.hasCompleteBuyerProfile) {
+          // Navigate to buyer onboarding
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => BuyerOnboardingScreen(
+                user: user,
+                onCompleted: () {
+                  appState.refreshUser().then((_) {
+                    Navigator.of(context).pushReplacementNamed('/');
+                  });
+                },
+              ),
+            ),
+          );
+          return;
+        }
+        
         // Show success feedback
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

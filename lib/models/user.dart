@@ -66,4 +66,12 @@ class User {
            whatsappNumber != null && 
            sellerBio != null;
   }
+
+  // Check if user has completed buyer profile
+  bool get hasCompleteBuyerProfile {
+    if (role != UserRole.buyer) return true;
+    return phoneNumber != null && 
+           whatsappNumber != null && 
+           businessAddress != null; // Using businessAddress for delivery address
+  }
 }

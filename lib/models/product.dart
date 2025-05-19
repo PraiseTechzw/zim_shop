@@ -10,9 +10,9 @@ class Product {
   final String? category;
   final String? sellerId;
   final String? sellerName;
+  final String? sellerUsername;
   final String? sellerEmail;
   final String? sellerWhatsapp;
-  final double? sellerRating;
   final bool? sellerIsVerified;
   final bool? isActive;
   final String? createdAt;
@@ -28,9 +28,9 @@ class Product {
     this.category,
     this.sellerId,
     this.sellerName,
+    this.sellerUsername,
     this.sellerEmail,
     this.sellerWhatsapp,
-    this.sellerRating,
     this.sellerIsVerified,
     this.isActive,
     this.createdAt,
@@ -82,9 +82,9 @@ class Product {
       final category = productData['category']?.toString();
       final sellerId = productData['seller_id']?.toString();
       final sellerName = productData['seller_name']?.toString();
+      final sellerUsername = productData['seller_username']?.toString();
       final sellerEmail = productData['seller_email']?.toString();
       final sellerWhatsapp = productData['seller_whatsapp']?.toString();
-      final sellerRating = productData['seller_rating'] is num ? (productData['seller_rating'] as num).toDouble() : null;
       final sellerIsVerified = productData['seller_is_verified'] is bool ? productData['seller_is_verified'] as bool : null;
       final isActive = productData['is_active'] is bool ? productData['is_active'] as bool : null;
       final createdAt = productData['created_at']?.toString();
@@ -100,9 +100,9 @@ class Product {
         category: category,
         sellerId: sellerId,
         sellerName: sellerName,
+        sellerUsername: sellerUsername,
         sellerEmail: sellerEmail,
         sellerWhatsapp: sellerWhatsapp,
-        sellerRating: sellerRating,
         sellerIsVerified: sellerIsVerified,
         isActive: isActive,
         createdAt: createdAt,
@@ -127,9 +127,9 @@ class Product {
       'category': category,
       'seller_id': sellerId,
       'seller_name': sellerName,
+      'seller_username': sellerUsername,
       'seller_email': sellerEmail,
       'seller_whatsapp': sellerWhatsapp,
-      'seller_rating': sellerRating,
       'seller_is_verified': sellerIsVerified,
       'is_active': isActive,
       'created_at': createdAt,
@@ -147,9 +147,9 @@ class Product {
     String? category,
     String? sellerId,
     String? sellerName,
+    String? sellerUsername,
     String? sellerEmail,
     String? sellerWhatsapp,
-    double? sellerRating,
     bool? sellerIsVerified,
     bool? isActive,
     String? createdAt,
@@ -165,9 +165,9 @@ class Product {
       category: category ?? this.category,
       sellerId: sellerId ?? this.sellerId,
       sellerName: sellerName ?? this.sellerName,
+      sellerUsername: sellerUsername ?? this.sellerUsername,
       sellerEmail: sellerEmail ?? this.sellerEmail,
       sellerWhatsapp: sellerWhatsapp ?? this.sellerWhatsapp,
-      sellerRating: sellerRating ?? this.sellerRating,
       sellerIsVerified: sellerIsVerified ?? this.sellerIsVerified,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,

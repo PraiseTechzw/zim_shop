@@ -79,16 +79,37 @@ class _AddProductScreenState extends State<AddProductScreen> {
             _selectedCategory = _categories.first;
           } else if (_categories.isEmpty) {
             // Add some default categories if none exist yet
-            _categories = ['Electronics', 'Clothing', 'Food', 'Home', 'Other'];
-            _selectedCategory = 'Other';
+            _categories = [
+              'Furniture',
+              'Motor Spares',
+              'Fresh Produce',
+              'Clothing & Textiles',
+              'Electronics',
+              'Household Items',
+              'Agricultural Products',
+              'Building Materials',
+              'Food & Beverages',
+              'Other'
+            ];
+            _selectedCategory = 'Fresh Produce';
           }
           
           if (_selectedLocation.isEmpty && _locations.isNotEmpty) {
             _selectedLocation = _locations.first;
           } else if (_locations.isEmpty) {
             // Add some default locations if none exist yet
-            _locations = ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Masvingo', 'Other'];
-            _selectedLocation = 'Harare';
+            _locations = [
+              'Mbare Musika',
+              'Glen View Mapuranga',
+              'Kaguvi Motor Spares',
+              'Harare CBD',
+              'Bulawayo CBD',
+              'Mutare CBD',
+              'Gweru CBD',
+              'Masvingo CBD',
+              'Other'
+            ];
+            _selectedLocation = 'Mbare Musika';
           }
           
           _isLoading = false;
@@ -99,10 +120,31 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (mounted) {
         setState(() {
           // Add some default categories and locations if loading fails
-          _categories = ['Electronics', 'Clothing', 'Food', 'Home', 'Other'];
-          _locations = ['Harare', 'Bulawayo', 'Mutare', 'Gweru', 'Masvingo', 'Other'];
-          _selectedCategory = 'Other';
-          _selectedLocation = 'Harare';
+          _categories = [
+            'Furniture',
+            'Motor Spares',
+            'Fresh Produce',
+            'Clothing & Textiles',
+            'Electronics',
+            'Household Items',
+            'Agricultural Products',
+            'Building Materials',
+            'Food & Beverages',
+            'Other'
+          ];
+          _locations = [
+            'Mbare Musika',
+            'Glen View Mapuranga',
+            'Kaguvi Motor Spares',
+            'Harare CBD',
+            'Bulawayo CBD',
+            'Mutare CBD',
+            'Gweru CBD',
+            'Masvingo CBD',
+            'Other'
+          ];
+          _selectedCategory = 'Fresh Produce';
+          _selectedLocation = 'Mbare Musika';
           _isLoading = false;
         });
       }

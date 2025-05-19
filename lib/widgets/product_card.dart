@@ -209,34 +209,26 @@ class ProductCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 2),
                       Flexible(
-                        child: Text(
-                          product.sellerName ?? 'Unknown Seller',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.secondary,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Builder(
+                          builder: (context) {
+                            debugPrint('Product Card - Seller Info:');
+                            debugPrint('  - Seller Name: ${product.sellerName}');
+                            debugPrint('  - Seller Username: ${product.sellerUsername}');
+                            debugPrint('  - Seller ID: ${product.sellerId}');
+                            return Text(
+                              product.sellerName ?? 'Unknown Seller',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.secondary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
                         ),
                       ),
                       // Display rating if available
-                      if (product.sellerRating != null) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.star,
-                          size: 12,
-                          color: Colors.amber,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          product.sellerRating!.toStringAsFixed(1),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.amber.shade800,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
+                      
                     ],
                   ),
                 ],

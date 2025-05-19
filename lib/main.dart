@@ -10,7 +10,8 @@ import 'package:zim_shop/screen/auth/reset_password_screen.dart';
 import 'package:zim_shop/screen/buyer_main_screen.dart';
 import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
-import 'package:zim_shop/services/supabase_service.dart';
+import 'package:zim_shop/screen/seller_onboarding_screen.dart';
+import 'package:zim_shop/screen/buyer_onboarding_screen.dart';
 import 'package:zim_shop/services/paynow_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -40,16 +41,22 @@ void main() async {
   
   // Initialize services with error handling
   try {
+    debugPrint('🔄 Initializing Supabase...');
+    debugPrint('📝 Using URL: $supabaseUrl');
+    
     // Initialize Supabase with custom deeplink handling
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
-      debug: kDebugMode,
+      debug: true, // Enable debug mode
       authOptions: const FlutterAuthClientOptions(
         // Disable automatic deeplink handling so we can handle it ourselves
         detectSessionInUri: false,
+        autoRefreshToken: true,
       ),
     );
+    
+    debugPrint('✅ Supabase initialized successfully');
     
     // Initialize Paynow
     PaynowService(
@@ -69,19 +76,19 @@ void main() async {
     setupDeeplinkHandling(appState);
     
     // Everything initialized successfully, start the app
-  runApp(
-    MultiProvider(
-      providers: [
+    runApp(
+      MultiProvider(
+        providers: [
           ChangeNotifierProvider.value(value: appState),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
+          ChangeNotifierProvider(create: (_) => CartProvider()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ],
         child: ZimMarketApp(navigatorKey: navigatorKey),
       ),
     );
   } catch (e) {
     // If there's an error during initialization, show an error screen
-    debugPrint('Error initializing app: $e');
+    debugPrint('❌ Error initializing app: $e');
     runApp(
       MaterialApp(
         home: Scaffold(
@@ -348,6 +355,44 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
         Navigator.of(context).pushReplacementNamed('/login');
       });
       
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final user = appState.currentUser;
+    if (user == null) {
+      debugPrint("No user data available, showing LoginScreen");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      });
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    // Check if user needs to complete their profile
+    if (user.role == UserRole.seller && !user.hasCompleteSellerProfile) {
+      debugPrint("Seller profile incomplete, showing SellerOnboardingScreen");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => SellerOnboardingScreen(
+              user: user,
+              onCompleted: () {
+                appState.refreshUser().then((_) {
+                  // Navigate directly to seller screen after onboarding
+                  Navigator.of(context).pushReplacementNamed('/seller');
+                });
+              },
+            ),
+          ),
+        );
+      });
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
