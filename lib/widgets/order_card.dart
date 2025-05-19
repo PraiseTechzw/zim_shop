@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:zim_shop/models/order.dart';
+import 'package:zim_shop/screen/order_details_screen.dart';
 import 'dart:math' as math;
 
 class OrderCard extends StatelessWidget {
   final Order order;
   final bool isSellerView;
   final bool isAdminView;
+  final Function(bool)? onStatusUpdated;
   
   const OrderCard({
     Key? key,
     required this.order,
     this.isSellerView = false,
     this.isAdminView = false,
+    this.onStatusUpdated,
   }) : super(key: key);
 
   @override
@@ -36,7 +39,6 @@ class OrderCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -154,15 +156,35 @@ class OrderCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton(
-                    onPressed: () {
-                      // View order details
+                    onPressed: () async {
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsScreen(
+                            order: order,
+                            isSellerView: isSellerView,
+                          ),
+                        ),
+                      );
+                      if (result == true && onStatusUpdated != null) {
+                        onStatusUpdated!(true);
+                      }
                     },
                     child: const Text('View Details'),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: () {
-                      // Update order status
+                    onPressed: () async {
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsScreen(
+                            order: order,
+                            isSellerView: isSellerView,
+                          ),
+                        ),
+                      );
+                      if (result == true && onStatusUpdated != null) {
+                        onStatusUpdated!(true);
+                      }
                     },
                     child: Text(
                       order.status == 'Processing' ? 'Mark as Delivered' : 'Mark as Processing',
