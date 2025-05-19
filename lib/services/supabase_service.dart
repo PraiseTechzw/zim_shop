@@ -596,6 +596,22 @@ class SupabaseService {
     }
   }
   
+  Future<bool> updateOrderStatus(String orderId, String newStatus) async {
+    try {
+      final response = await _client
+          .from('orders')
+          .update({'status': newStatus})
+          .eq('id', orderId)
+          .select()
+          .single();
+          
+      return response != null;
+    } catch (e) {
+      debugPrint('Error updating order status: $e');
+      return false;
+    }
+  }
+  
   // ADMIN METHODS
   Future<bool> approveUser(String userId, bool isApproved) async {
     try {
