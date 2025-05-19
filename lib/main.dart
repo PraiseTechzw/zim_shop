@@ -12,7 +12,6 @@ import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
 import 'package:zim_shop/screen/seller_onboarding_screen.dart';
 import 'package:zim_shop/services/payment_service.dart';
-import 'package:zim_shop/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Supabase configuration constants
@@ -63,10 +62,6 @@ void main() async {
       secret: paypalSecret,
       isSandbox: isPaypalSandbox,
     );
-
-    // Initialize Notification Service
-    final notificationService = NotificationService();
-    await notificationService.initialize();
     
     // Create the AppState provider that will be used throughout the app
     final appState = AppState();
@@ -85,7 +80,6 @@ void main() async {
           ChangeNotifierProvider(create: (_) => CartProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
           Provider.value(value: paymentService),
-          Provider.value(value: notificationService),
         ],
         child: ZimMarketApp(navigatorKey: navigatorKey),
       ),

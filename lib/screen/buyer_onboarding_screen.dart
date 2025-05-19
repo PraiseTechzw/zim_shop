@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zim_shop/models/user.dart';
 import 'package:zim_shop/services/supabase_service.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class BuyerOnboardingScreen extends StatefulWidget {
   final User user;
@@ -225,10 +226,10 @@ class _BuyerOnboardingScreenState extends State<BuyerOnboardingScreen> {
                     decoration: InputDecoration(
                       labelText: 'WhatsApp Number',
                       hintText: 'Enter your WhatsApp number',
-                      prefixIcon: Image.asset(
-                        'assets/images/whatsapp_icon.png', 
-                        width: 24, 
-                        height: 24,
+                      prefixIcon: FaIcon(
+                        FontAwesomeIcons.whatsapp,
+                        size: 24,
+                        color: Colors.green,
                       ),
                     ),
                     keyboardType: TextInputType.phone,
