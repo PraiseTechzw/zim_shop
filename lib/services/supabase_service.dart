@@ -397,7 +397,8 @@ class SupabaseService {
               whatsapp_number,
               seller_bio,
               business_name,
-              business_address
+              business_address,
+              role
             )
           ''')
           .order('created_at', ascending: false);
@@ -419,6 +420,7 @@ class SupabaseService {
           debugPrint('  - WhatsApp: ${seller['whatsapp_number']}');
           debugPrint('  - Business Name: ${seller['business_name']}');
           debugPrint('  - Business Address: ${seller['business_address']}');
+          debugPrint('  - Role: ${seller['role']}');
         } else {
           debugPrint('No seller data found for this product');
         }
@@ -435,13 +437,10 @@ class SupabaseService {
         final sellerIsVerified = sellerData?['is_approved'] as bool? ?? false;
         final whatsappNumber = sellerData?['whatsapp_number'] as String?;
         final businessName = sellerData?['business_name'] as String?;
+        final sellerRole = sellerData?['role'] as String?;
         
-        debugPrint('Creating Product object with seller info:');
-        debugPrint('  - Seller Username: $sellerUsername');
-        debugPrint('  - Seller Email: $sellerEmail');
-        debugPrint('  - Seller Verified: $sellerIsVerified');
-        debugPrint('  - Seller WhatsApp: $whatsappNumber');
-        debugPrint('  - Business Name: $businessName');
+        // Only set seller information if the user is actually a seller
+        final isSeller = sellerRole == 'seller';
         
         return Product(
           id: item['id'] as String? ?? '',
@@ -452,11 +451,11 @@ class SupabaseService {
           category: item['category'] as String? ?? 'Uncategorized',
           location: item['location'] as String? ?? 'Unknown Location',
           sellerId: sellerId,
-          sellerName: businessName,
-          sellerUsername: sellerUsername,
-          sellerEmail: sellerEmail,
-          sellerIsVerified: sellerIsVerified,
-          sellerWhatsapp: whatsappNumber,
+          sellerName: isSeller ? businessName : null,
+          sellerUsername: isSeller ? sellerUsername : null,
+          sellerEmail: isSeller ? sellerEmail : null,
+          sellerIsVerified: isSeller ? sellerIsVerified : null,
+          sellerWhatsapp: isSeller ? whatsappNumber : null,
         );
       }).toList();
     } catch (e) {
