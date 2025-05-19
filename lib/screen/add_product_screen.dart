@@ -44,10 +44,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
     // If editing an existing product, populate the form
     if (widget.product != null) {
       _nameController.text = widget.product!.name;
-      _descriptionController.text = widget.product!.description;
+      _descriptionController.text = widget.product!.description ?? '';
       _priceController.text = widget.product!.price.toString();
-      _selectedCategory = widget.product!.category;
-      _selectedLocation = widget.product!.location;
+      _selectedCategory = widget.product!.category ?? '';
+      _selectedLocation = widget.product!.location ?? '';
       _imageUrl = widget.product!.imageUrl;
     }
   }
@@ -61,11 +61,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final locations = <String>{};
       
       for (final product in products) {
-        if (product.category != null && product.category.isNotEmpty) {
-          categories.add(product.category);
+        if (product.category?.isNotEmpty ?? false) {
+          categories.add(product.category!);
         }
-        if (product.location != null && product.location.isNotEmpty) {
-          locations.add(product.location);
+        if (product.location?.isNotEmpty ?? false) {
+          locations.add(product.location!);
         }
       }
       

@@ -135,7 +135,7 @@ class CartProvider extends ChangeNotifier {
         }
       }
 
-      // Load order items
+      // Load order items with product details
       final itemsResponse = await _supabaseService.client
           .from('order_items')
           .select('*, products(*)')
@@ -155,13 +155,37 @@ class CartProvider extends ChangeNotifier {
           throw Exception('Product data is missing for order item: $item');
         }
         
-        final product = Product.fromJson(productData);
-        final quantity = item['quantity'];
-        if (quantity == null) {
-          throw Exception('Quantity is missing for order item: $item');
-        }
+        debugPrint('Raw product data: $productData');
         
-        orderItems.add(CartItem(product: product, quantity: quantity as int));
+        try {
+          // Create a new map with the product data, ensuring all fields are properly typed
+          final Map<String, dynamic> productMap = {
+            'products': {
+              'id': productData['id']?.toString() ?? '',
+              'name': productData['name']?.toString() ?? '',
+              'description': productData['description']?.toString(),
+              'price': productData['price'] is num ? (productData['price'] as num).toDouble() : 0.0,
+              'image_url': productData['image_url']?.toString(),
+              'location': productData['location']?.toString(),
+              'category': productData['category']?.toString(),
+              'seller_id': productData['seller_id']?.toString(),
+              'is_active': productData['is_active'] is bool ? productData['is_active'] as bool : null,
+              'created_at': productData['created_at']?.toString(),
+              'updated_at': productData['updated_at']?.toString(),
+            }
+          };
+          
+          debugPrint('Processed product map: $productMap');
+          
+          final product = Product.fromJson(productMap);
+          final quantity = item['quantity'] is int ? item['quantity'] as int : 0;
+          orderItems.add(CartItem(product: product, quantity: quantity));
+        } catch (e, stackTrace) {
+          debugPrint('Error creating product: $e');
+          debugPrint('Stack trace: $stackTrace');
+          debugPrint('Product data that caused error: $productData');
+          rethrow;
+        }
       }
       
       order.items = orderItems;

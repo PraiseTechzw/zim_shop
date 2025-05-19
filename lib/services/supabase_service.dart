@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:zim_shop/models/user.dart';
 import 'package:zim_shop/models/product.dart';
 import 'package:zim_shop/models/order.dart';
+import 'package:zim_shop/models/cart_item.dart';
 import 'package:zim_shop/providers/app_state.dart' hide AuthException;
 import 'dart:io';
 import 'dart:typed_data';
@@ -483,13 +484,29 @@ class SupabaseService {
     try {
       final response = await _client
           .from('orders')
-          .select('*, order_items(*)')
+          .select('*, order_items(*, products(*))')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
       
-      // Parse orders from response
       List<Order> orders = [];
-      // Implementation will depend on your data structure
+      for (final orderData in response) {
+        final order = Order.fromJson(orderData);
+        
+        // Parse order items
+        final items = <CartItem>[];
+        for (final itemData in orderData['order_items']) {
+          final productData = itemData['products'];
+          if (productData != null) {
+            final product = Product.fromJson({'products': productData});
+            items.add(CartItem(
+              product: product,
+              quantity: itemData['quantity'] as int,
+            ));
+          }
+        }
+        order.items = items;
+        orders.add(order);
+      }
       
       return orders;
     } catch (e) {
@@ -513,16 +530,37 @@ class SupabaseService {
       // Extract product IDs
       final productIds = productsResponse.map((p) => p['id'] as String).toList();
       
-      // For now, we'll simplify and just return all orders
-      // In a real implementation, you would filter by seller's products
+      // Get orders that contain seller's products
       final response = await _client
           .from('orders')
-          .select('*, order_items(*)')
+          .select('*, order_items(*, products(*))')
           .order('created_at', ascending: false);
       
-      // Parse orders from response
       List<Order> orders = [];
-      // Implementation will depend on your data structure
+      for (final orderData in response) {
+        final order = Order.fromJson(orderData);
+        
+        // Parse order items and filter for seller's products
+        final items = <CartItem>[];
+        for (final itemData in orderData['order_items']) {
+          final productData = itemData['products'];
+          if (productData != null) {
+            final product = Product.fromJson({'products': productData});
+            if (productIds.contains(product.id)) {
+              items.add(CartItem(
+                product: product,
+                quantity: itemData['quantity'] as int,
+              ));
+            }
+          }
+        }
+        
+        // Only add orders that have items from this seller
+        if (items.isNotEmpty) {
+          order.items = items;
+          orders.add(order);
+        }
+      }
       
       return orders;
     } catch (e) {

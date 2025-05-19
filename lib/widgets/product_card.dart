@@ -35,9 +35,9 @@ class ProductCard extends StatelessWidget {
                   aspectRatio: 1.3,
                   child: Container(
                     color: Colors.grey[300],
-                    child: product.imageUrl.startsWith('http')
+                    child: product.imageUrl?.startsWith('http') ?? false
                       ? Image.network(
-                          product.imageUrl,
+                          product.imageUrl ?? '',
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             debugPrint('Error loading product image: $error');
@@ -51,18 +51,18 @@ class ProductCard extends StatelessWidget {
                           },
                         )
                       : Image.asset(
-                      product.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: Colors.grey[400],
-                          ),
-                        );
-                      },
-                    ),
+                          product.imageUrl ?? '',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 40,
+                                color: Colors.grey[400],
+                              ),
+                            );
+                          },
+                        ),
                   ),
                 ),
                 // Gradient overlay
@@ -95,7 +95,7 @@ class ProductCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      product.category,
+                      product.category ?? 'Uncategorized',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -167,7 +167,7 @@ class ProductCard extends StatelessWidget {
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
-                                product.location,
+                                product.location ?? 'Location not specified',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.secondary,
                                   fontSize: 11,
@@ -210,7 +210,7 @@ class ProductCard extends StatelessWidget {
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                          product.sellerName,
+                          product.sellerName ?? 'Unknown Seller',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.secondary,
                             fontSize: 11,

@@ -25,9 +25,9 @@ class ProductListItem extends StatelessWidget {
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(8),
         ),
-        child: product.imageUrl.startsWith('http')
+        child: product.imageUrl?.startsWith('http') ?? false
           ? Image.network(
-              product.imageUrl,
+              product.imageUrl ?? '',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 debugPrint('Error loading image: $error');
@@ -41,18 +41,18 @@ class ProductListItem extends StatelessWidget {
               },
             )
           : Image.asset(
-          product.imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return const Center(
-              child: Icon(
-                Icons.image_not_supported,
-                size: 24,
-                color: Colors.grey,
-              ),
-            );
-          },
-        ),
+              product.imageUrl ?? '',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Center(
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 24,
+                    color: Colors.grey,
+                  ),
+                );
+              },
+            ),
       ),
       title: Text(product.name),
       subtitle: Text(

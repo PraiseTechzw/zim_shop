@@ -32,7 +32,7 @@ class CartItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Image.network(
-                cartItem.product.imageUrl,
+                cartItem.product.imageUrl ?? '',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return const Center(
@@ -64,7 +64,7 @@ class CartItemCard extends StatelessWidget {
                       const Icon(Icons.location_on, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        cartItem.product.location,
+                        cartItem.product.location ?? 'Location not specified',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.secondary,
                         ),

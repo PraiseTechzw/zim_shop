@@ -39,11 +39,11 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       final locations = <String>{};
       
       for (final product in products) {
-        if (product.category != null && product.category.isNotEmpty) {
-          categories.add(product.category);
+        if (product.category?.isNotEmpty ?? false) {
+          categories.add(product.category!);
         }
-        if (product.location != null && product.location.isNotEmpty) {
-          locations.add(product.location);
+        if (product.location?.isNotEmpty ?? false) {
+          locations.add(product.location!);
         }
       }
       

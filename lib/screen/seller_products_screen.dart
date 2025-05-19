@@ -203,7 +203,7 @@ class _SellerProductsScreenState extends State<SellerProductsScreen> {
                               FilledButton(
                                 onPressed: () {
                                   Navigator.of(context).pop();
-                                _deleteProduct(product.id, product.imageUrl);
+                                  _deleteProduct(product.id, product.imageUrl ?? '');
                                 },
                                 child: const Text('Delete'),
                               ),

@@ -45,9 +45,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
                 ),
-                child: widget.product.imageUrl.startsWith('http')
+                child: widget.product.imageUrl?.startsWith('http') ?? false
                   ? Image.network(
-                      widget.product.imageUrl,
+                      widget.product.imageUrl ?? '',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         debugPrint('Error loading product image: $error');
@@ -70,7 +70,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       },
                     )
                   : Image.asset(
-                      widget.product.imageUrl,
+                      widget.product.imageUrl ?? '',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return _buildDefaultProductImage(theme);
@@ -114,7 +114,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       FaIcon(FontAwesomeIcons.locationDot, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        widget.product.location,
+                        widget.product.location ?? 'Location not specified',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.secondary,
                         ),
@@ -133,7 +133,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.product.description,
+                    widget.product.description ?? 'No description available',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   
@@ -283,7 +283,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                widget.product.sellerName,
+                widget.product.sellerName ?? 'Unknown Seller',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -320,7 +320,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'ID: ${widget.product.sellerId.substring(0, Math.min(8, widget.product.sellerId.length))}...',
+                'ID: ${widget.product.sellerId != null ? '${widget.product.sellerId!.substring(0, Math.min(8, widget.product.sellerId!.length))}...' : 'Unknown'}',
                 style: theme.textTheme.bodyMedium,
               ),
             ],
