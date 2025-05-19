@@ -7,6 +7,7 @@ import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/order_success_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zim_shop/services/payment_service.dart' as payment;
+import 'package:zim_shop/screen/paypal_payment_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -90,22 +91,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!mounted) return;
 
       if (result.isSuccess && result.redirectUrl != null) {
-        // Launch PayPal payment URL
-        if (await canLaunchUrl(Uri.parse(result.redirectUrl!))) {
-          await launchUrl(Uri.parse(result.redirectUrl!));
-          
-          // Clear cart after successful payment
-          context.read<CartProvider>().clearCart();
-          
-          // Navigate to success screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => OrderSuccessScreen(order: order),
+        // Navigate to PayPal payment screen
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PayPalPaymentScreen(
+              order: order,
+              paymentUrl: result.redirectUrl!,
+              returnUrl: result.returnUrl!,
+              cancelUrl: result.cancelUrl!,
             ),
-          );
-        } else {
-          throw Exception('Could not launch PayPal payment page');
-        }
+          ),
+        );
+        
+        // Clear cart after successful payment
+        context.read<CartProvider>().clearCart();
       } else {
         throw Exception(result.error ?? 'Payment failed');
       }
