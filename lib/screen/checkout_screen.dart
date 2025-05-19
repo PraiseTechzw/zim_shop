@@ -8,6 +8,7 @@ import 'package:zim_shop/screen/order_success_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zim_shop/services/payment_service.dart' as payment;
 import 'package:zim_shop/screen/paypal_payment_screen.dart';
+import 'package:zim_shop/models/cart_item.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -168,70 +169,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Order summary
-                        Card(
-                          margin: EdgeInsets.zero,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    FaIcon(
-                                      FontAwesomeIcons.receipt,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Order Summary',
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                ...cartProvider.items.map((item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '${item.quantity}x ${item.product.name}',
-                                          style: theme.textTheme.bodyLarge,
-                                        ),
-                                      ),
-                                      Text(
-                                        '\$${(item.product.price * item.quantity).toStringAsFixed(2)}',
-                                        style: theme.textTheme.bodyLarge,
-                                      ),
-                                    ],
-                                  ),
-                                )),
-                                const Divider(),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Total:',
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      '\$${cartProvider.totalAmount.toStringAsFixed(2)}',
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _buildOrderSummarySection(cartProvider.items),
                         
                         const SizedBox(height: 24),
                         
@@ -351,83 +289,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(height: 24),
                         
                         // Payment method
-                        Row(
-                          children: [
-                            FaIcon(
-                              FontAwesomeIcons.creditCard,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Payment Method',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Card(
-                          margin: EdgeInsets.zero,
-                          child: Column(
-                            children: [
-                              RadioListTile<payment.PaymentMethod>(
-                                title: Row(
-                                  children: [
-                                    const FaIcon(FontAwesomeIcons.paypal),
-                                    const SizedBox(width: 8),
-                                    const Text('PayPal'),
-                                    const Spacer(),
-                                    Image.asset(
-                                      'assets/images/paypal.png',
-                                      width: 80,
-                                      height: 30,
-                                      errorBuilder: (context, error, stackTrace) => const FaIcon(
-                                        FontAwesomeIcons.paypal,
-                                        size: 30,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                value: payment.PaymentMethod.paypal,
-                                groupValue: _paymentMethod,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _paymentMethod = value!;
-                                  });
-                                },
-                              ),
-                              if (_paymentMethod == payment.PaymentMethod.paypal)
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Divider(),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const FaIcon(
-                                            FontAwesomeIcons.shieldHalved,
-                                            size: 16,
-                                            color: Colors.green,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Secure Payment',
-                                            style: theme.textTheme.bodyMedium?.copyWith(
-                                              color: Colors.green,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                        _buildPaymentMethodSection(),
                         
                         const SizedBox(height: 32),
                         
@@ -503,6 +365,125 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
               ],
             ),
+    );
+  }
+
+  Widget _buildPaymentMethodSection() {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Payment Method',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Radio<payment.PaymentMethod>(
+                  value: payment.PaymentMethod.paypal,
+                  groupValue: _paymentMethod,
+                  onChanged: (value) {
+                    setState(() {
+                      _paymentMethod = value!;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/paypal.png',
+                        height: 24,
+                        width: 24,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.payment, size: 24);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('PayPal'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderSummarySection(List<CartItem> items) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Order Summary',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...items.map((item) {
+              final description = '${item.product?.name ?? 'Unknown Product'} x ${item.quantity}';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        description,
+                        style: const TextStyle(fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '\$${((item.product?.price ?? 0) * item.quantity).toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '\$${items.fold<double>(0, (sum, item) => sum + ((item.product?.price ?? 0) * item.quantity)).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -37,83 +37,26 @@ class Product {
     this.updatedAt,
   });
 
-  factory Product.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      throw Exception('Product data is null');
-    }
-
+  factory Product.fromJson(Map<String, dynamic> json) {
     debugPrint('Product.fromJson input: $json');
-
-    // Extract the actual product data if it's nested
+    
+    // Handle nested products object
     final productData = json['products'] ?? json;
     debugPrint('Extracted product data: $productData');
-
-    // Ensure we have a valid map
-    if (productData is! Map<String, dynamic>) {
-      throw Exception('Invalid product data format');
-    }
-
-    try {
-      // Required fields with safe defaults
-      final id = productData['id']?.toString() ?? '';
-      if (id.isEmpty) {
-        throw Exception('Product ID is required');
-      }
-
-      final name = productData['name']?.toString() ?? '';
-      if (name.isEmpty) {
-        throw Exception('Product name is required');
-      }
-
-      // Handle price conversion safely
-      double price = 0.0;
-      if (productData['price'] != null) {
-        if (productData['price'] is num) {
-          price = (productData['price'] as num).toDouble();
-        } else if (productData['price'] is String) {
-          price = double.tryParse(productData['price'] as String) ?? 0.0;
-        }
-      }
-
-      // Optional fields with null safety
-      final description = productData['description']?.toString();
-      final imageUrl = productData['image_url']?.toString();
-      final location = productData['location']?.toString();
-      final category = productData['category']?.toString();
-      final sellerId = productData['seller_id']?.toString();
-      final sellerName = productData['seller_name']?.toString();
-      final sellerUsername = productData['seller_username']?.toString();
-      final sellerEmail = productData['seller_email']?.toString();
-      final sellerWhatsapp = productData['seller_whatsapp']?.toString();
-      final sellerIsVerified = productData['seller_is_verified'] is bool ? productData['seller_is_verified'] as bool : null;
-      final isActive = productData['is_active'] is bool ? productData['is_active'] as bool : null;
-      final createdAt = productData['created_at']?.toString();
-      final updatedAt = productData['updated_at']?.toString();
-
-      return Product(
-        id: id,
-        name: name,
-        description: description,
-        price: price,
-        imageUrl: imageUrl,
-        location: location,
-        category: category,
-        sellerId: sellerId,
-        sellerName: sellerName,
-        sellerUsername: sellerUsername,
-        sellerEmail: sellerEmail,
-        sellerWhatsapp: sellerWhatsapp,
-        sellerIsVerified: sellerIsVerified,
-        isActive: isActive,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-      );
-    } catch (e, stackTrace) {
-      debugPrint('Error creating Product object: $e');
-      debugPrint('Stack trace: $stackTrace');
-      debugPrint('Product data that caused error: $productData');
-      rethrow;
-    }
+    
+    return Product(
+      id: productData['id'] as String,
+      name: productData['name'] as String,
+      description: productData['description'] as String,
+      price: (productData['price'] as num).toDouble(),
+      imageUrl: productData['image_url'] as String?,
+      location: productData['location'] as String?,
+      category: productData['category'] as String?,
+      sellerId: productData['seller_id'] as String?,
+      isActive: productData['is_active'] as bool? ?? true,
+      createdAt: productData['created_at'] as String,
+      updatedAt: productData['updated_at'] as String,
+    );
   }
 
   Map<String, dynamic> toJson() {

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+import 'dart:io';
 
 enum PaymentMethod {
   paypal,
@@ -29,22 +31,37 @@ class PaymentTransaction {
 class PaymentService {
   final String clientId;
   final String secret;
-  final bool isSandbox;
+  final bool _isSandbox;
   final String baseUrl;
   String? _accessToken;
   Timer? _tokenRefreshTimer;
+  late final http.Client _httpClient;
+
+  bool get isSandbox => _isSandbox;
 
   PaymentService({
     required this.clientId,
     required this.secret,
-    this.isSandbox = true,
-  }) : baseUrl = isSandbox
+    bool isSandbox = true,
+  }) : _isSandbox = isSandbox,
+       baseUrl = isSandbox 
           ? 'https://api-m.sandbox.paypal.com'
           : 'https://api-m.paypal.com' {
+    debugPrint('Initializing PaymentService:');
+    debugPrint('- Client ID: ${clientId.substring(0, 5)}...');
+    debugPrint('- Is Sandbox: $_isSandbox');
+    debugPrint('- Base URL: $baseUrl');
+    
+    // Initialize HTTP client with SSL certificate handling
+    final httpClient = HttpClient()
+      ..badCertificateCallback = (cert, host, port) => true;
+    _httpClient = IOClient(httpClient);
+    
     _initializeToken();
   }
 
   void _initializeToken() {
+    debugPrint('Initializing token...');
     _getAccessToken();
     // Refresh token every 8 hours (PayPal tokens are valid for 9 hours)
     _tokenRefreshTimer?.cancel();
@@ -56,10 +73,17 @@ class PaymentService {
 
   Future<void> _getAccessToken() async {
     try {
-      final response = await http.post(
+      debugPrint('Getting PayPal access token...');
+      
+      // Encode client credentials for Basic Auth
+      final credentials = base64Encode(utf8.encode('$clientId:$secret'));
+      debugPrint('Using credentials: ${credentials.substring(0, 10)}...');
+      
+      final response = await _httpClient.post(
         Uri.parse('$baseUrl/v1/oauth2/token'),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic $credentials',
         },
         body: {
           'grant_type': 'client_credentials',
@@ -67,16 +91,20 @@ class PaymentService {
         encoding: Encoding.getByName('utf-8'),
       ).timeout(const Duration(seconds: 10));
 
+      debugPrint('PayPal token response status: ${response.statusCode}');
+      debugPrint('PayPal token response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         _accessToken = data['access_token'];
+        debugPrint('Successfully got access token: ${_accessToken?.substring(0, 10)}...');
       } else {
         debugPrint('Error getting PayPal access token: ${response.body}');
-        throw Exception('Failed to get PayPal access token');
+        throw Exception('Failed to get PayPal access token: ${response.body}');
       }
     } catch (e) {
       debugPrint('Error getting PayPal access token: $e');
-      throw Exception('Failed to get PayPal access token');
+      throw Exception('Failed to get PayPal access token: $e');
     }
   }
 
@@ -86,9 +114,16 @@ class PaymentService {
     required String description,
   }) async {
     try {
+      debugPrint('Creating PayPal payment:');
+      debugPrint('- Email: $email');
+      debugPrint('- Amount: $amount');
+      debugPrint('- Description: $description');
+
       if (_accessToken == null) {
+        debugPrint('Access token is null, getting new token...');
         await _getAccessToken();
       }
+      debugPrint('Using access token: ${_accessToken?.substring(0, 10)}...');
 
       final returnUrl = isSandbox
           ? 'https://sandbox.zimmarket.com/payment/success'
@@ -97,58 +132,93 @@ class PaymentService {
           ? 'https://sandbox.zimmarket.com/payment/cancel'
           : 'https://zimmarket.com/payment/cancel';
 
-      final response = await http.post(
+      debugPrint('Using URLs:');
+      debugPrint('- Return URL: $returnUrl');
+      debugPrint('- Cancel URL: $cancelUrl');
+
+      final requestBody = {
+        'intent': 'CAPTURE',
+        'purchase_units': [
+          {
+            'amount': {
+              'currency_code': 'USD',
+              'value': amount.toStringAsFixed(2),
+            },
+            'description': description,
+          }
+        ],
+        'application_context': {
+          'return_url': returnUrl,
+          'cancel_url': cancelUrl,
+          'brand_name': 'ZimMarket',
+          'landing_page': 'LOGIN',
+          'user_action': 'PAY_NOW',
+          'shipping_preference': 'NO_SHIPPING',
+        },
+      };
+
+      debugPrint('Sending request to PayPal API:');
+      debugPrint('URL: $baseUrl/v2/checkout/orders');
+      debugPrint('Body: ${json.encode(requestBody)}');
+
+      final response = await _httpClient.post(
         Uri.parse('$baseUrl/v2/checkout/orders'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_accessToken',
         },
-        body: json.encode({
-          'intent': 'CAPTURE',
-          'purchase_units': [
-            {
-              'amount': {
-                'currency_code': 'USD',
-                'value': amount.toStringAsFixed(2),
-              },
-              'description': description,
-            }
-          ],
-          'application_context': {
-            'return_url': returnUrl,
-            'cancel_url': cancelUrl,
-            'brand_name': 'ZimMarket',
-            'landing_page': 'LOGIN',
-            'user_action': 'PAY_NOW',
-            'shipping_preference': 'NO_SHIPPING',
-          },
-        }),
+        body: json.encode(requestBody),
       ).timeout(const Duration(seconds: 10));
+
+      debugPrint('PayPal API Response:');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Body: ${response.body}');
 
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
-        final links = data['links'] as List;
+        if (data == null) {
+          throw Exception('Invalid response from PayPal API');
+        }
+
+        final links = data['links'] as List?;
+        if (links == null) {
+          throw Exception('No links found in PayPal response');
+        }
+
+        debugPrint('Found ${links.length} links in response');
+
         final approveLink = links.firstWhere(
           (link) => link['rel'] == 'approve',
           orElse: () => {'href': null},
         );
-        
+
+        final redirectUrl = approveLink['href'] as String?;
+        if (redirectUrl == null) {
+          throw Exception('No approval URL found in PayPal response');
+        }
+
+        debugPrint('Successfully created PayPal payment:');
+        debugPrint('- Order ID: ${data['id']}');
+        debugPrint('- Redirect URL: $redirectUrl');
+
         return PaymentTransaction(
           isSuccess: true,
-          reference: data['id'],
-          redirectUrl: approveLink['href'],
+          reference: data['id'] as String? ?? '',
+          redirectUrl: redirectUrl,
           returnUrl: returnUrl,
           cancelUrl: cancelUrl,
         );
       } else {
-        debugPrint('Error creating PayPal payment: ${response.body}');
+        final errorBody = response.body;
+        debugPrint('PayPal API Error: $errorBody');
         return PaymentTransaction(
           isSuccess: false,
-          error: 'Failed to create PayPal payment',
+          error: 'Failed to create PayPal payment: ${response.statusCode}',
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error creating PayPal payment: $e');
+      debugPrint('Stack trace: $stackTrace');
       return PaymentTransaction(
         isSuccess: false,
         error: e.toString(),
@@ -166,7 +236,7 @@ class PaymentService {
         await _getAccessToken();
       }
 
-      final response = await http.get(
+      final response = await _httpClient.get(
         Uri.parse('$baseUrl/v2/checkout/orders/$reference'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
@@ -228,7 +298,7 @@ class PaymentService {
         await _getAccessToken();
       }
 
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$baseUrl/v2/checkout/orders/$orderId/capture'),
         headers: {
           'Content-Type': 'application/json',
@@ -280,5 +350,6 @@ class PaymentService {
 
   void dispose() {
     _tokenRefreshTimer?.cancel();
+    _httpClient.close();
   }
 } 

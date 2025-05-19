@@ -32,30 +32,44 @@ class PaymentsService {
     required payment.PaymentMethod paymentMethod,
   }) async {
     try {
+      debugPrint('Processing checkout:');
+      debugPrint('- Items count: ${items.length}');
+      debugPrint('- Email: $email');
+      debugPrint('- Phone: $phone');
+      debugPrint('- Payment method: $paymentMethod');
+
       // Calculate total amount
       final totalAmount = items.fold<double>(
         0,
         (sum, item) => sum + (item.product.price * item.quantity),
       );
+      debugPrint('Total amount: $totalAmount');
       
       // Create payment description
       final description = 'Payment for ${items.length} items from ZimMarket';
+      debugPrint('Payment description: $description');
       
       payment.PaymentTransaction transaction;
       if (paymentMethod == payment.PaymentMethod.bank) {
-        // Bank payment
+        debugPrint('Creating bank payment...');
         transaction = await _paymentService.createBankPayment(
           amount: totalAmount,
           description: description,
         );
       } else {
-        // PayPal payment
+        debugPrint('Creating PayPal payment...');
         transaction = await _paymentService.createPayPalPayment(
           email: email,
           amount: totalAmount,
           description: description,
         );
       }
+      
+      debugPrint('Payment transaction result:');
+      debugPrint('- Success: ${transaction.isSuccess}');
+      debugPrint('- Error: ${transaction.error}');
+      debugPrint('- Reference: ${transaction.reference}');
+      debugPrint('- Redirect URL: ${transaction.redirectUrl}');
       
       if (transaction.isSuccess) {
         return PaymentResult(
@@ -69,8 +83,9 @@ class PaymentsService {
           error: transaction.error ?? 'Payment failed',
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error processing checkout: $e');
+      debugPrint('Stack trace: $stackTrace');
       return PaymentResult(
         success: false,
         error: e.toString(),

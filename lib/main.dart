@@ -11,7 +11,6 @@ import 'package:zim_shop/screen/buyer_main_screen.dart';
 import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
 import 'package:zim_shop/screen/seller_onboarding_screen.dart';
-import 'package:zim_shop/screen/buyer_onboarding_screen.dart';
 import 'package:zim_shop/services/payment_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,8 +20,8 @@ const String supabaseUrl = 'https://gkyeijnygndqqstxucpn.supabase.co';
 const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdreWVpam55Z25kcXFzdHh1Y3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1Nzk5NzcsImV4cCI6MjA2MzE1NTk3N30.kgLfES9rO2VsIkCErg556pbXc3UZEaSjuoX7SHcRQFU';
 
 // PayPal configuration constants
-const String paypalClientId = 'your_paypal_client_id';
-const String paypalSecret = 'your_paypal_secret';
+const String paypalClientId = 'AeQoObZYOY7u2APCkjQptcHE3YUbOrf1apwD0f2eZKfIbLI0aIFE6hA0EKlEy7L1QUMi5C8Oe0E5sayv';
+const String paypalSecret = 'EGdE9sBRek56L6B3nCSzp-9ZJPmWFU8Bj_erbeSGUWilaHHZPZP6iS8-o7Y623Q-t-C5n_zP4xrkZXCH';
 const bool isPaypalSandbox = true; // Set to false for production
 
 // Global navigator key to access context from anywhere
@@ -59,8 +58,8 @@ void main() async {
     
     // Initialize Payment Service
     final paymentService = PaymentService(
-      clientId: "AeQoObZYOY7u2APCkjQptcHE3YUbOrf1apwD0f2eZKfIbLI0aIFE6hA0EKlEy7L1QUMi5C8Oe0E5sayv",
-      secret: "EGdE9sBRek56L6B3nCSzp-9ZJPmWFU8Bj_erbeSGUWilaHHZPZP6iS8-o7Y623Q-t-C5n_zP4xrkZXCH",
+      clientId: paypalClientId,
+      secret: paypalSecret,
       isSandbox: isPaypalSandbox,
     );
     
