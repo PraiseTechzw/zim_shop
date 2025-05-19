@@ -382,6 +382,8 @@ class SupabaseService {
   // PRODUCTS METHODS
   Future<List<Product>> getProducts() async {
     try {
+      debugPrint('Fetching products with seller information...');
+      
       final response = await _client
           .from('products')
           .select('''
@@ -404,7 +406,22 @@ class SupabaseService {
       for (var item in response) {
         debugPrint('Product ID: ${item['id']}');
         debugPrint('Seller ID: ${item['seller_id']}');
-        debugPrint('Seller Data: ${item['seller']}');
+        debugPrint('Raw Seller Data: ${item['seller']}');
+        
+        // Detailed seller data logging
+        if (item['seller'] != null) {
+          final seller = item['seller'] as Map<String, dynamic>;
+          debugPrint('Detailed Seller Information:');
+          debugPrint('  - Username: ${seller['username']}');
+          debugPrint('  - Email: ${seller['email']}');
+          debugPrint('  - Is Approved: ${seller['is_approved']}');
+          debugPrint('  - Phone: ${seller['phone_number']}');
+          debugPrint('  - WhatsApp: ${seller['whatsapp_number']}');
+          debugPrint('  - Business Name: ${seller['business_name']}');
+          debugPrint('  - Business Address: ${seller['business_address']}');
+        } else {
+          debugPrint('No seller data found for this product');
+        }
       }
       
       return response.map<Product>((item) {
@@ -418,6 +435,13 @@ class SupabaseService {
         final sellerIsVerified = sellerData?['is_approved'] as bool? ?? false;
         final whatsappNumber = sellerData?['whatsapp_number'] as String?;
         final businessName = sellerData?['business_name'] as String?;
+        
+        debugPrint('Creating Product object with seller info:');
+        debugPrint('  - Seller Username: $sellerUsername');
+        debugPrint('  - Seller Email: $sellerEmail');
+        debugPrint('  - Seller Verified: $sellerIsVerified');
+        debugPrint('  - Seller WhatsApp: $whatsappNumber');
+        debugPrint('  - Business Name: $businessName');
         
         return Product(
           id: item['id'] as String? ?? '',
