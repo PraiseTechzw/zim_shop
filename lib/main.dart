@@ -149,8 +149,7 @@ Future<void> handleDeepLink(Uri uri, AppState appState) async {
     if (_isHandlingDeepLink) {
       debugPrint('Already handling a deep link, ignoring: $uri');
       return;
-    }
-    
+    } 
     _isHandlingDeepLink = true;
     debugPrint('Handling deeplink: $uri');
     

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zim_shop/providers/app_state.dart';
+import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/auth/login_screen.dart';
 import 'package:zim_shop/screen/buyer_home_screen.dart';
 import 'package:zim_shop/screen/cart_screen.dart';
@@ -58,25 +59,47 @@ class _BuyerMainScreenState extends State<BuyerMainScreen> {
             _selectedIndex = index;
           });
         },
-        destinations: const [
+        elevation: 8,
+        height: 65,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        animationDuration: const Duration(milliseconds: 500),
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            selectedIcon: Icon(Icons.shopping_cart),
+            icon: Badge(
+              label: Consumer<CartProvider>(
+                builder: (context, cart, _) => Text(
+                  cart.itemCount?.toString() ?? '0',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              isLabelVisible: true,
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
+            selectedIcon: Badge(
+              label: Consumer<CartProvider>(
+                builder: (context, cart, _) => Text(
+                  cart.itemCount?.toString() ?? '0',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              isLabelVisible: true,
+              child: const Icon(Icons.shopping_cart),
+            ),
             label: 'Cart',
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
+            icon: const Icon(Icons.receipt_long_outlined),
+            selectedIcon: const Icon(Icons.receipt_long),
             label: 'Orders',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
             label: 'Profile',
           ),
         ],
