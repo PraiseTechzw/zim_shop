@@ -54,6 +54,10 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             _selectedIndex = index;
           });
         },
+        elevation: 8,
+        height: 65,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        animationDuration: const Duration(milliseconds: 500),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
