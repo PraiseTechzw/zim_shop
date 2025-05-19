@@ -3,7 +3,7 @@ import 'package:zim_shop/models/cart_item.dart';
 class Order {
   final String id;
   final String userId;
-  final List<CartItem> items;
+  List<CartItem> _items;
   final double totalAmount;
   final DateTime date;
   final String status;
@@ -23,7 +23,12 @@ class Order {
     this.shippingAddress,
     this.shippingPhone,
     this.shippingEmail,
-  }) : items = items ?? [];
+  }) : _items = items ?? [];
+
+  List<CartItem> get items => _items;
+  set items(List<CartItem> value) {
+    _items = value;
+  }
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(

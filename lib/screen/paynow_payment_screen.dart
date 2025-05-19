@@ -25,6 +25,8 @@ class PayNowPaymentScreen extends StatefulWidget {
 class _PayNowPaymentScreenState extends State<PayNowPaymentScreen> {
   late final WebViewController controller;
   bool isLoading = true;
+  bool hasError = false;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -36,6 +38,8 @@ class _PayNowPaymentScreenState extends State<PayNowPaymentScreen> {
           onPageStarted: (String url) {
             setState(() {
               isLoading = true;
+              hasError = false;
+              errorMessage = null;
             });
           },
           onPageFinished: (String url) {
@@ -50,6 +54,12 @@ class _PayNowPaymentScreenState extends State<PayNowPaymentScreen> {
                 ),
               );
             }
+          },
+          onWebResourceError: (WebResourceError error) {
+            setState(() {
+              hasError = true;
+              errorMessage = error.description;
+            });
           },
           onNavigationRequest: (NavigationRequest request) {
             // Allow all navigation
@@ -85,7 +95,47 @@ class _PayNowPaymentScreenState extends State<PayNowPaymentScreen> {
       ),
       body: Stack(
         children: [
-          WebViewWidget(controller: controller),
+          if (hasError)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const FaIcon(
+                    FontAwesomeIcons.triangleExclamation,
+                    size: 64,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading payment page',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        hasError = false;
+                        errorMessage = null;
+                        isLoading = true;
+                      });
+                      controller.reload();
+                    },
+                    icon: const FaIcon(FontAwesomeIcons.rotate),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          else
+            WebViewWidget(controller: controller),
           if (isLoading)
             Container(
               color: Colors.white,

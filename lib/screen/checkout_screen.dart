@@ -41,32 +41,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
+    if (_isProcessing) return;
+
+    if (!mounted) return;
     setState(() {
       _isProcessing = true;
     });
-    
+
     try {
+      if (!mounted) return;
+      final appState = Provider.of<AppState>(context, listen: false);
+      if (appState.currentUser == null) {
+        throw Exception('Please log in to continue with payment');
+      }
+
+      // Validate all required fields
+      if (_nameController.text.trim().isEmpty ||
+          _emailController.text.trim().isEmpty ||
+          _phoneController.text.trim().isEmpty ||
+          _addressController.text.trim().isEmpty ||
+          _cityController.text.trim().isEmpty ||
+          _postalCodeController.text.trim().isEmpty) {
+        throw Exception('Please fill in all required fields');
+      }
+
       // Create order with shipping information
       final order = await context.read<CartProvider>().checkout(
-            name: _nameController.text,
-            email: _emailController.text,
-            phone: _phoneController.text,
-            address: _addressController.text,
-            city: _cityController.text,
-            postalCode: _postalCodeController.text,
+            context: context,
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
+            address: _addressController.text.trim(),
+            city: _cityController.text.trim(),
+            postalCode: _postalCodeController.text.trim(),
           );
 
       if (!mounted) return;
-
       // Navigate to PayNow payment screen
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => PayNowPaymentScreen(
             order: order,
-            name: _nameController.text,
-            email: _emailController.text,
-            phone: _phoneController.text,
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
           ),
         ),
       );
@@ -388,11 +407,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'PayNow is Zimbabwe\'s leading payment gateway',
-                                        style: theme.textTheme.bodySmall,
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -403,40 +417,66 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(height: 32),
                         
                         // Place order button
-                        FilledButton.icon(
-                          onPressed: _isProcessing ? null : _processPayment,
-                          icon: _isProcessing
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : SvgPicture.asset(
-                                  'assets/images/button_pay-now_large.svg',
-                                  width: 24,
-                                  height: 24,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcIn,
-                                  ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _isProcessing ? null : _processPayment,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: _isProcessing ? Colors.grey : const Color(0xFF00A0DC),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (_isProcessing)
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    else ...[
+                                      SvgPicture.asset(
+                                        'assets/images/button_pay-now_large.svg',
+                                        width: 24,
+                                        height: 24,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Text(
+                                      _isProcessing ? 'Processing...' : 'Pay with PayNow',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                          label: Text(_isProcessing ? 'Processing...' : 'Pay with PayNow'),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 56),
-                            backgroundColor: const Color(0xFF00A0DC), // PayNow blue
+                              ),
+                            ),
                           ),
                         ),
                         
                         const SizedBox(height: 8),
                         const Center(
                           child: Text(
-                            'You will be redirected to PayNow to complete your payment.',
+                            'Secure payment powered by PayNow',
                             style: TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,
+                              color: Colors.grey,
                             ),
                           ),
                         ),

@@ -60,6 +60,7 @@ class CartProvider extends ChangeNotifier {
   }
   
   Future<Order> checkout({
+    required BuildContext context,
     required String name,
     required String email,
     required String phone,
@@ -68,10 +69,17 @@ class CartProvider extends ChangeNotifier {
     required String postalCode,
   }) async {
     try {
-      final appState = Provider.of<AppState>(navigatorKey.currentContext!, listen: false);
+      debugPrint('Starting checkout process...');
+      
+      if (_items.isEmpty) {
+        throw Exception('Cart is empty');
+      }
+
+      final appState = Provider.of<AppState>(context, listen: false);
       if (appState.currentUser == null) {
         throw Exception('User not logged in');
       }
+      debugPrint('User ID: ${appState.currentUser!.id}');
 
       // Create order with shipping information
       final orderData = {
@@ -84,28 +92,47 @@ class CartProvider extends ChangeNotifier {
         'shipping_address': address,
         'shipping_city': city,
         'shipping_postal_code': postalCode,
+        'created_at': DateTime.now().toIso8601String(),
       };
+      debugPrint('Order data: $orderData');
 
       final response = await _supabaseService.client
           .from('orders')
           .insert(orderData)
           .select()
           .single();
+      debugPrint('Order response: $response');
 
       if (response == null) {
-        throw Exception('Failed to create order');
+        throw Exception('Failed to create order: No response from server');
       }
 
       final order = Order.fromJson(response);
+      debugPrint('Created order: ${order.toJson()}');
 
       // Create order items
       for (final item in _items) {
-        await _supabaseService.client.from('order_items').insert({
+        if (item.product == null) {
+          throw Exception('Product data is missing for cart item');
+        }
+        
+        final itemData = {
           'order_id': order.id,
           'product_id': item.product.id,
           'quantity': item.quantity,
           'price': item.product.price,
-        });
+        };
+        debugPrint('Creating order item: $itemData');
+        
+        final itemResponse = await _supabaseService.client
+            .from('order_items')
+            .insert(itemData)
+            .select()
+            .single();
+            
+        if (itemResponse == null) {
+          throw Exception('Failed to create order item: No response from server');
+        }
       }
 
       // Load order items
@@ -113,18 +140,37 @@ class CartProvider extends ChangeNotifier {
           .from('order_items')
           .select('*, products(*)')
           .eq('order_id', order.id);
+      debugPrint('Order items response: $itemsResponse');
 
-      if (itemsResponse != null) {
-        final orderItems = itemsResponse.map((item) {
-          final product = Product.fromJson(item['products']);
-          return CartItem(product: product, quantity: item['quantity']);
-        }).toList();
-        order.items = orderItems;
+      if (itemsResponse == null) {
+        throw Exception('Failed to load order items: No response from server');
       }
 
+      final orderItems = <CartItem>[];
+      for (final item in itemsResponse) {
+        debugPrint('Processing order item: $item');
+        
+        final productData = item['products'];
+        if (productData == null) {
+          throw Exception('Product data is missing for order item: $item');
+        }
+        
+        final product = Product.fromJson(productData);
+        final quantity = item['quantity'];
+        if (quantity == null) {
+          throw Exception('Quantity is missing for order item: $item');
+        }
+        
+        orderItems.add(CartItem(product: product, quantity: quantity as int));
+      }
+      
+      order.items = orderItems;
+      debugPrint('Added ${orderItems.length} items to order');
+
       return order;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error in checkout: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
