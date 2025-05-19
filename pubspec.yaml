@@ -30,6 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Remove PayPal Flutter package
+  # flutter_paypal_payment: ^1.0.8
+  # Remove paynow dependency
+  # paynow: ^4.2.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -37,7 +41,7 @@ dependencies:
   provider: ^6.1.1
   # Supabase
   supabase_flutter: ^2.3.4
-  # For HTTP requests (Paynow API)
+  # For HTTP requests (PayPal API)
   http: ^1.2.1
   shared_preferences: ^2.2.2
   uuid: ^4.3.3

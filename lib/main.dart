@@ -12,7 +12,7 @@ import 'package:zim_shop/screen/seller_main_screen.dart';
 import 'package:zim_shop/screen/admin_main_screen.dart';
 import 'package:zim_shop/screen/seller_onboarding_screen.dart';
 import 'package:zim_shop/screen/buyer_onboarding_screen.dart';
-import 'package:zim_shop/services/paynow_service.dart';
+import 'package:zim_shop/services/payment_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Supabase configuration constants
@@ -20,11 +20,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 const String supabaseUrl = 'https://gkyeijnygndqqstxucpn.supabase.co';
 const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdreWVpam55Z25kcXFzdHh1Y3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1Nzk5NzcsImV4cCI6MjA2MzE1NTk3N30.kgLfES9rO2VsIkCErg556pbXc3UZEaSjuoX7SHcRQFU';
 
-// Paynow test integration credentials
-const String paynowIntegrationId = ' 20889';
-const String paynowIntegrationKey = ' 00e58958-d6a8-4a0a-84ed-bf0b3bc322f2';
-const String paynowResultUrl = 'https://example.com/api/paynow/update';
-const String paynowReturnUrl = 'https://example.com/checkout/return';
+// PayPal configuration constants
+const String paypalClientId = 'your_paypal_client_id';
+const String paypalSecret = 'your_paypal_secret';
+const bool isPaypalSandbox = true; // Set to false for production
 
 // Global navigator key to access context from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -58,12 +57,11 @@ void main() async {
     
     debugPrint('✅ Supabase initialized successfully');
     
-    // Initialize Paynow
-    PaynowService(
-      integrationId: paynowIntegrationId,
-      integrationKey: paynowIntegrationKey,
-      resultUrl: paynowResultUrl,
-      returnUrl: paynowReturnUrl,
+    // Initialize Payment Service
+    final paymentService = PaymentService(
+      clientId: "AeQoObZYOY7u2APCkjQptcHE3YUbOrf1apwD0f2eZKfIbLI0aIFE6hA0EKlEy7L1QUMi5C8Oe0E5sayv",
+      secret: "EGdE9sBRek56L6B3nCSzp-9ZJPmWFU8Bj_erbeSGUWilaHHZPZP6iS8-o7Y623Q-t-C5n_zP4xrkZXCH",
+      isSandbox: isPaypalSandbox,
     );
     
     // Create the AppState provider that will be used throughout the app
@@ -82,6 +80,7 @@ void main() async {
           ChangeNotifierProvider.value(value: appState),
           ChangeNotifierProvider(create: (_) => CartProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          Provider.value(value: paymentService),
         ],
         child: ZimMarketApp(navigatorKey: navigatorKey),
       ),

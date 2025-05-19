@@ -227,7 +227,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     debugPrint('  - Seller Name: ${widget.product.sellerName}');
     debugPrint('  - Seller Username: ${widget.product.sellerUsername}');
     debugPrint('  - Seller ID: ${widget.product.sellerId}');
-    debugPrint('  - Seller Email: ${widget.product.sellerEmail}');
     debugPrint('  - Seller WhatsApp: ${widget.product.sellerWhatsapp}');
     debugPrint('  - Seller Verified: ${widget.product.sellerIsVerified}');
 
@@ -311,27 +310,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           
           const SizedBox(height: 12),
           
-          // Seller email if available
-          if (widget.product.sellerEmail != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                children: [
-                  Icon(Icons.email, 
-                    color: theme.colorScheme.primary,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.product.sellerEmail!,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          
           // Seller WhatsApp if available
           if (widget.product.sellerWhatsapp != null)
             Padding(
@@ -368,19 +346,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 minimumSize: const Size(double.infinity, 0),
               ),
             ),
-          
-          if (widget.product.sellerEmail != null) ...[
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => _contactSeller(),
-              icon: const FaIcon(FontAwesomeIcons.envelope, size: 16),
-              label: const Text('Contact via Email'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                minimumSize: const Size(double.infinity, 0),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -446,44 +411,7 @@ Is this product still available?''';
       }
 
       if (!launched) {
-        // If all URL formats fail, show dialog with options
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Open WhatsApp'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Please choose an option:'),
-                  const SizedBox(height: 16),
-                  Text('Phone: $phoneNumber'),
-                  const SizedBox(height: 8),
-                  Text('Message: $message'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('CANCEL'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: phoneNumber));
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Phone number copied to clipboard')),
-                    );
-                  },
-                  child: const Text('COPY NUMBER'),
-                ),
-              ],
-            ),
-          );
-        }
+        throw Exception('Could not launch WhatsApp');
       }
     } catch (e) {
       if (mounted) {
@@ -503,77 +431,6 @@ Is this product still available?''';
         );
       }
     }
-  }
-  
-  // Regular contact method
-  void _contactSeller() {
-    // This would launch an in-app chat feature or email in a real app
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('In-app messaging coming soon!'),
-        action: SnackBarAction(
-          label: 'EMAIL',
-          onPressed: () async {
-            if (widget.product.sellerEmail == null) return;
-            
-            try {
-              final emailUri = Uri(
-                scheme: 'mailto',
-                path: widget.product.sellerEmail,
-                queryParameters: {
-                  'subject': 'Regarding your product on ZimMarket: ${widget.product.name}',
-                },
-              );
-              
-              if (await canLaunchUrl(emailUri)) {
-                await launchUrl(
-                  emailUri,
-                  mode: LaunchMode.externalNonBrowserApplication,
-                );
-              } else {
-                throw Exception('Could not launch email client');
-              }
-            } catch (e) {
-              if (mounted) {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Contact Seller'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Email: ${widget.product.sellerEmail}'),
-                        const SizedBox(height: 8),
-                        Text('Subject: Regarding your product on ZimMarket: ${widget.product.name}'),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('CANCEL'),
-                      ),
-                      FilledButton(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: widget.product.sellerEmail!));
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Email address copied to clipboard')),
-                          );
-                        },
-                        child: const Text('COPY EMAIL'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            }
-          },
-        ),
-      ),
-    );
   }
   
   // Default product image widget

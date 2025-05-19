@@ -272,10 +272,10 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
                       'Welcome back,',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: Colors.white.withOpacity(0.8),
@@ -285,8 +285,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
                       appState.currentUser?.username ?? 'Admin',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                fontWeight: FontWeight.bold,
+              ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -300,7 +300,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withOpacity(0.9),
             ),
-          ),
+        ),
         ],
       ),
     );
@@ -376,39 +376,39 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: [
-                Container(
+          children: [
+            Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+              decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: color,
                     size: 20,
-                  ),
-                ),
+              ),
+            ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                         overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        value,
+                ),
+                Text(
+                  value,
                         style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
+                  ),
+                ),
+              ],
                   ),
                 ),
               ],
@@ -727,10 +727,10 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
         await appState.getUsers();
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: appState.users.length,
-        itemBuilder: (context, index) {
-          final user = appState.users[index];
+      padding: const EdgeInsets.all(16),
+      itemCount: appState.users.length,
+      itemBuilder: (context, index) {
+        final user = appState.users[index];
           return _buildUserCard(user, appState);
         },
       ),
@@ -741,8 +741,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
     final theme = Theme.of(context);
     final isSeller = user.role == UserRole.seller;
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -752,8 +752,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
               children: [
                 CircleAvatar(
                   backgroundColor: _getUserRoleColor(user.role).withOpacity(0.1),
-                  child: Icon(
-                    _getUserRoleIcon(user.role),
+              child: Icon(
+                _getUserRoleIcon(user.role),
                     color: _getUserRoleColor(user.role),
                   ),
                 ),
@@ -766,8 +766,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
                         user.username,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              ),
+            ),
                       Text(
                         user.email,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -1085,7 +1085,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
             final products = snapshot.data ?? [];
             
             if (products.isEmpty) {
-              return const Center(
+    return const Center(
                 child: Text('No products found'),
               );
             }
@@ -1368,7 +1368,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
                       'auto_approve_sellers': value,
                     });
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Settings updated successfully')),
                       );
                     }
@@ -1376,7 +1376,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> with SingleTickerProv
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error updating settings: $e')),
-                      );
+                  );
                     }
                   }
                 },

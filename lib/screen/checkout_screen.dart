@@ -6,7 +6,7 @@ import 'package:zim_shop/providers/app_state.dart';
 import 'package:zim_shop/providers/cart_provider.dart';
 import 'package:zim_shop/screen/order_success_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:zim_shop/screen/paynow_payment_screen.dart';
+import 'package:zim_shop/services/payment_service.dart' as payment;
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -23,7 +23,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _emailController = TextEditingController();
   final _cityController = TextEditingController();
   final _postalCodeController = TextEditingController();
-  String _paymentMethod = 'PayNow';
+  payment.PaymentMethod _paymentMethod = payment.PaymentMethod.paypal;
   bool _isProcessing = false;
   
   @override
@@ -78,21 +78,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           );
 
       if (!mounted) return;
-      // Navigate to PayNow payment screen
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PayNowPaymentScreen(
-            order: order,
-            name: _nameController.text.trim(),
-            email: _emailController.text.trim(),
-            phone: _phoneController.text.trim(),
-          ),
-        ),
+      
+      // Process payment
+      final paymentService = Provider.of<payment.PaymentService>(context, listen: false);
+      final result = await paymentService.createPayPalPayment(
+        email: _emailController.text.trim(),
+        amount: order.totalAmount,
+        description: 'Payment for order ${order.id}',
       );
 
-      // Clear cart after successful payment
       if (!mounted) return;
-      context.read<CartProvider>().clearCart();
+
+      if (result.isSuccess && result.redirectUrl != null) {
+        // Launch PayPal payment URL
+        if (await canLaunchUrl(Uri.parse(result.redirectUrl!))) {
+          await launchUrl(Uri.parse(result.redirectUrl!));
+          
+          // Clear cart after successful payment
+          context.read<CartProvider>().clearCart();
+          
+          // Navigate to success screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => OrderSuccessScreen(order: order),
+            ),
+          );
+        } else {
+          throw Exception('Could not launch PayPal payment page');
+        }
+      } else {
+        throw Exception(result.error ?? 'Payment failed');
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -356,33 +372,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           margin: EdgeInsets.zero,
                           child: Column(
                             children: [
-                              RadioListTile(
+                              RadioListTile<payment.PaymentMethod>(
                                 title: Row(
                                   children: [
-                                    const FaIcon(FontAwesomeIcons.moneyBill),
+                                    const FaIcon(FontAwesomeIcons.paypal),
                                     const SizedBox(width: 8),
-                                    const Text('PayNow'),
+                                    const Text('PayPal'),
                                     const Spacer(),
-                                    SvgPicture.asset(
-                                      'assets/images/button_pay-now_large.svg',
+                                    Image.asset(
+                                      'assets/images/paypal.png',
                                       width: 80,
                                       height: 30,
-                                      placeholderBuilder: (context) => const FaIcon(
-                                        FontAwesomeIcons.moneyBill,
+                                      errorBuilder: (context, error, stackTrace) => const FaIcon(
+                                        FontAwesomeIcons.paypal,
                                         size: 30,
                                       ),
                                     ),
                                   ],
                                 ),
-                                value: 'PayNow',
+                                value: payment.PaymentMethod.paypal,
                                 groupValue: _paymentMethod,
                                 onChanged: (value) {
                                   setState(() {
-                                    _paymentMethod = value.toString();
+                                    _paymentMethod = value!;
                                   });
                                 },
                               ),
-                              if (_paymentMethod == 'PayNow')
+                              if (_paymentMethod == payment.PaymentMethod.paypal)
                                 Padding(
                                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                                   child: Column(
@@ -426,7 +442,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               width: double.infinity,
                               height: 56,
                               decoration: BoxDecoration(
-                                color: _isProcessing ? Colors.grey : const Color(0xFF00A0DC),
+                                color: _isProcessing ? Colors.grey : const Color(0xFF0070BA),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
@@ -443,19 +459,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                         ),
                                       )
                                     else ...[
-                                      SvgPicture.asset(
-                                        'assets/images/button_pay-now_large.svg',
-                                        width: 24,
-                                        height: 24,
-                                        colorFilter: const ColorFilter.mode(
-                                          Colors.white,
-                                          BlendMode.srcIn,
-                                        ),
+                                      const FaIcon(
+                                        FontAwesomeIcons.paypal,
+                                        color: Colors.white,
                                       ),
                                       const SizedBox(width: 8),
                                     ],
                                     Text(
-                                      _isProcessing ? 'Processing...' : 'Pay with PayNow',
+                                      _isProcessing ? 'Processing...' : 'Pay with PayPal',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
@@ -472,7 +483,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(height: 8),
                         const Center(
                           child: Text(
-                            'Secure payment powered by PayNow',
+                            'Secure payment powered by PayPal',
                             style: TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,

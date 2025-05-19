@@ -44,7 +44,7 @@ class Order {
       status: json['status'] as String,
       shippingName: json['shipping_name'] as String?,
       shippingAddress: json['shipping_address'] as String?,
-      shippingPhone: json['shipping_phone'] as String?,
+      shippingPhone: json['shipping_phone']?.toString(),
       shippingEmail: json['shipping_email'] as String?,
       shippingCity: json['shipping_city'] as String?,
       shippingPostalCode: json['shipping_postal_code'] as String?,

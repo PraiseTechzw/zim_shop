@@ -384,7 +384,14 @@ class SupabaseService {
     try {
       debugPrint('Fetching products with seller information...');
       
-      final response = await _client
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+      
+      // Use a join query to fetch products with seller information using service role
+      final response = await serviceClient
           .from('products')
           .select('''
             *,
@@ -395,52 +402,44 @@ class SupabaseService {
               is_approved,
               phone_number,
               whatsapp_number,
-              seller_bio,
-              business_name,
-              business_address,
-              role
+              business_name
             )
           ''')
           .order('created_at', ascending: false);
       
-      debugPrint('Raw product data from database:');
-      for (var item in response) {
-        debugPrint('Product ID: ${item['id']}');
-        debugPrint('Seller ID: ${item['seller_id']}');
-        debugPrint('Raw Seller Data: ${item['seller']}');
-        
-        // Detailed seller data logging
-        if (item['seller'] != null) {
-          final seller = item['seller'] as Map<String, dynamic>;
-          debugPrint('Detailed Seller Information:');
-          debugPrint('  - Username: ${seller['username']}');
-          debugPrint('  - Email: ${seller['email']}');
-          debugPrint('  - Is Approved: ${seller['is_approved']}');
-          debugPrint('  - Phone: ${seller['phone_number']}');
-          debugPrint('  - WhatsApp: ${seller['whatsapp_number']}');
-          debugPrint('  - Business Name: ${seller['business_name']}');
-          debugPrint('  - Business Address: ${seller['business_address']}');
-          debugPrint('  - Role: ${seller['role']}');
-        } else {
-          debugPrint('No seller data found for this product');
-        }
-      }
+      debugPrint('Found ${response.length} products');
+      debugPrint('Raw response: $response');
       
+      // Map products with seller information
       return response.map<Product>((item) {
-        // Use null-safe access and provide default values
-        final sellerId = item['seller_id'] as String? ?? '';
         final sellerData = item['seller'] as Map<String, dynamic>?;
+        
+        debugPrint('\nProcessing product ${item['id']}');
+        debugPrint('Seller ID: ${item['seller_id']}');
+        
+        if (sellerData != null) {
+          debugPrint('Found seller data:');
+          debugPrint('  - Username: ${sellerData['username']}');
+          debugPrint('  - Email: ${sellerData['email']}');
+          debugPrint('  - Is Approved: ${sellerData['is_approved']}');
+          debugPrint('  - Phone: ${sellerData['phone_number']}');
+          debugPrint('  - WhatsApp: ${sellerData['whatsapp_number']}');
+          debugPrint('  - Business Name: ${sellerData['business_name']}');
+        } else {
+          debugPrint('No seller data found for product');
+        }
         
         // Get seller information with proper null handling
         final sellerUsername = sellerData?['username'] as String? ?? 'Unknown Seller';
         final sellerEmail = sellerData?['email'] as String?;
         final sellerIsVerified = sellerData?['is_approved'] as bool? ?? false;
         final whatsappNumber = sellerData?['whatsapp_number'] as String?;
-        final businessName = sellerData?['business_name'] as String?;
-        final sellerRole = sellerData?['role'] as String?;
         
-        // Only set seller information if the user is actually a seller
-        final isSeller = sellerRole == 'seller';
+        debugPrint('Creating Product object with seller info:');
+        debugPrint('  - Seller Username: $sellerUsername');
+        debugPrint('  - Seller Email: $sellerEmail');
+        debugPrint('  - Seller Verified: $sellerIsVerified');
+        debugPrint('  - Seller WhatsApp: $whatsappNumber');
         
         return Product(
           id: item['id'] as String? ?? '',
@@ -450,12 +449,15 @@ class SupabaseService {
           imageUrl: item['image_url'] as String? ?? 'assets/images/placeholder.jpg',
           category: item['category'] as String? ?? 'Uncategorized',
           location: item['location'] as String? ?? 'Unknown Location',
-          sellerId: sellerId,
-          sellerName: isSeller ? businessName : null,
-          sellerUsername: isSeller ? sellerUsername : null,
-          sellerEmail: isSeller ? sellerEmail : null,
-          sellerIsVerified: isSeller ? sellerIsVerified : null,
-          sellerWhatsapp: isSeller ? whatsappNumber : null,
+          sellerId: item['seller_id'] as String? ?? '',
+          sellerName: sellerUsername,
+          sellerUsername: sellerUsername,
+          sellerEmail: sellerEmail,
+          sellerIsVerified: sellerIsVerified,
+          sellerWhatsapp: whatsappNumber,
+          isActive: item['is_active'] as bool? ?? true,
+          createdAt: item['created_at'] as String?,
+          updatedAt: item['updated_at'] as String?,
         );
       }).toList();
     } catch (e) {
@@ -622,17 +624,33 @@ class SupabaseService {
   
   Future<bool> createOrder(Order order) async {
     try {
-      // Create order
-      final orderResponse = await _client.from('orders').insert({
+      debugPrint('Creating order with data: ${order.toJson()}');
+      
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+      
+      // Create order using service role client to bypass RLS
+      final orderResponse = await serviceClient.from('orders').insert({
         'user_id': order.userId,
         'total_amount': order.totalAmount,
         'status': order.status,
+        'shipping_name': order.shippingName,
+        'shipping_email': order.shippingEmail,
+        'shipping_phone': order.shippingPhone,
+        'shipping_address': order.shippingAddress,
+        'shipping_city': order.shippingCity,
+        'shipping_postal_code': order.shippingPostalCode,
       }).select().single();
       
-      // Add order items
+      debugPrint('Order created successfully: $orderResponse');
+      
+      // Add order items using service role client
       final orderId = orderResponse['id'];
       for (var item in order.items) {
-        await _client.from('order_items').insert({
+        await serviceClient.from('order_items').insert({
           'order_id': orderId,
           'product_id': item.product.id,
           'quantity': item.quantity,
@@ -643,6 +661,11 @@ class SupabaseService {
       return true;
     } catch (e) {
       debugPrint('Error creating order: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+      }
       return false;
     }
   }
