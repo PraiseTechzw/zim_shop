@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zim_shop/models/user.dart';
 import 'package:zim_shop/services/supabase_service.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SellerOnboardingScreen extends StatefulWidget {
   final User user;
@@ -84,9 +85,14 @@ class _SellerOnboardingScreenState extends State<SellerOnboardingScreen> {
               content: const Text('Your seller profile has been updated successfully.'),
               actions: [
                 FilledButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.of(context).pop(); // Close dialog
-                    widget.onCompleted(); // Call completion callback
+                    // Call completion callback and wait for it to finish
+                    widget.onCompleted();
+                    // Ensure we're still mounted before any further navigation
+                    if (mounted) {
+                      Navigator.of(context).pushReplacementNamed('/seller');
+                    }
                   },
                   child: const Text('CONTINUE'),
                 ),
@@ -275,10 +281,10 @@ class _SellerOnboardingScreenState extends State<SellerOnboardingScreen> {
                     decoration: InputDecoration(
                       labelText: 'WhatsApp Number',
                       hintText: 'Enter your WhatsApp number',
-                      prefixIcon: Image.asset(
-                        'assets/images/whatsapp_icon.png', 
-                        width: 24, 
-                        height: 24,
+                       prefixIcon: FaIcon(
+                        FontAwesomeIcons.whatsapp,
+                        size: 24,
+                        color: Colors.green,
                       ),
                     ),
                     keyboardType: TextInputType.phone,

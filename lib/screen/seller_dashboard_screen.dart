@@ -155,10 +155,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                           MaterialPageRoute(
                             builder: (_) => SellerOnboardingScreen(
                               user: appState.currentUser!,
-                              onCompleted: () {
-                                appState.refreshUser().then((_) {
+                              onCompleted: () async {
+                                await appState.refreshUser();
+                                if (mounted) {
                                   setState(() {});
-                                });
+                                }
                               },
                             ),
                           ),

@@ -56,9 +56,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
     try {
       final products = await _supabaseService.getProducts();
       
-      // Extract unique categories and locations
-      final categories = <String>{};
-      final locations = <String>{};
+      // Default categories and locations
+      final defaultCategories = [
+        'Furniture',
+        'Motor Spares',
+        'Fresh Produce',
+        'Clothing & Textiles',
+        'Electronics',
+        'Household Items',
+        'Agricultural Products',
+        'Building Materials',
+        'Food & Beverages',
+        'Other'
+      ];
+      
+      final defaultLocations = [
+        'Mbare Musika',
+        'Glen View Mapuranga',
+        'Kaguvi Motor Spares',
+        'Harare CBD',
+        'Bulawayo CBD',
+        'Mutare CBD',
+        'Gweru CBD',
+        'Masvingo CBD',
+        'Other'
+      ];
+      
+      // Extract unique categories and locations from products
+      final categories = <String>{...defaultCategories};
+      final locations = <String>{...defaultLocations};
       
       for (final product in products) {
         if (product.category?.isNotEmpty ?? false) {
@@ -77,39 +103,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
           // Set default values if none selected yet
           if (_selectedCategory.isEmpty && _categories.isNotEmpty) {
             _selectedCategory = _categories.first;
-          } else if (_categories.isEmpty) {
-            // Add some default categories if none exist yet
-            _categories = [
-              'Furniture',
-              'Motor Spares',
-              'Fresh Produce',
-              'Clothing & Textiles',
-              'Electronics',
-              'Household Items',
-              'Agricultural Products',
-              'Building Materials',
-              'Food & Beverages',
-              'Other'
-            ];
-            _selectedCategory = 'Fresh Produce';
           }
           
           if (_selectedLocation.isEmpty && _locations.isNotEmpty) {
             _selectedLocation = _locations.first;
-          } else if (_locations.isEmpty) {
-            // Add some default locations if none exist yet
-            _locations = [
-              'Mbare Musika',
-              'Glen View Mapuranga',
-              'Kaguvi Motor Spares',
-              'Harare CBD',
-              'Bulawayo CBD',
-              'Mutare CBD',
-              'Gweru CBD',
-              'Masvingo CBD',
-              'Other'
-            ];
-            _selectedLocation = 'Mbare Musika';
           }
           
           _isLoading = false;
@@ -119,7 +116,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       debugPrint('Error loading categories and locations: $e');
       if (mounted) {
         setState(() {
-          // Add some default categories and locations if loading fails
+          // Add default categories and locations if loading fails
           _categories = [
             'Furniture',
             'Motor Spares',

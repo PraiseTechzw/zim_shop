@@ -381,11 +381,12 @@ class _AuthCheckWrapperState extends State<AuthCheckWrapper> {
           MaterialPageRoute(
             builder: (_) => SellerOnboardingScreen(
               user: user,
-              onCompleted: () {
-                appState.refreshUser().then((_) {
-                  // Navigate directly to seller screen after onboarding
+              onCompleted: () async {
+                await appState.refreshUser();
+                // Navigate directly to seller screen after onboarding
+                if (mounted) {
                   Navigator.of(context).pushReplacementNamed('/seller');
-                });
+                }
               },
             ),
           ),

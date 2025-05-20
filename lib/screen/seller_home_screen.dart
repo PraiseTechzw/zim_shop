@@ -41,11 +41,12 @@ class _SellerHomeScreenState extends State<SellerHomeScreen> {
     if (!appState.isSellerProfileComplete) {
       return SellerOnboardingScreen(
         user: user,
-        onCompleted: () {
+        onCompleted: () async {
           // Refresh user data and rebuild
-          appState.refreshUser().then((_) {
+          await appState.refreshUser();
+          if (mounted) {
             setState(() {});
-          });
+          }
         },
       );
     }

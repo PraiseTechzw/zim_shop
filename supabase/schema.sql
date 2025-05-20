@@ -11,7 +11,7 @@ DROP TYPE IF EXISTS order_status CASCADE;
 
 -- Create custom types
 CREATE TYPE user_role AS ENUM ('buyer', 'seller', 'admin');
-CREATE TYPE order_status AS ENUM ('pending', 'processing', 'shipped', 'delivered', 'cancelled');
+CREATE TYPE order_status AS ENUM ('pending', 'processing', 'completed', 'cancelled');
 
 -- Create schemas
 CREATE SCHEMA IF NOT EXISTS public;
@@ -90,7 +90,13 @@ CREATE TABLE IF NOT EXISTS public.orders (
     total_amount DECIMAL(10,2) NOT NULL CHECK (total_amount >= 0),
     status order_status NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    shipping_address TEXT,
+    shipping_city TEXT,
+    shipping_email TEXT,
+    shipping_name TEXT,
+    shipping_phone TEXT,
+    shipping_postal_code TEXT
 );
 
 -- Create order_items table (removed the valid_order_item constraint, will add as trigger)

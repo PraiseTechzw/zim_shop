@@ -570,36 +570,64 @@ class SupabaseService {
   
   Future<List<Order>> getSellerOrders(String sellerId) async {
     try {
-      // First get seller's products
-      final productsResponse = await _client
-          .from('products')
-          .select('id')
-          .eq('seller_id', sellerId);
+      debugPrint('🔄 Starting getSellerOrders for seller: $sellerId');
       
-      if (productsResponse.isEmpty) {
-        return [];
-      }
+      // Create a service role client for admin operations to bypass RLS
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
       
-      // Extract product IDs
-      final productIds = productsResponse.map((p) => p['id'] as String).toList();
+      // Call the dedicated function we created
+      final response = await serviceClient.rpc(
+        'get_seller_orders',
+        params: {
+          'p_seller_id': sellerId
+        }
+      );
       
-      // Get orders that contain seller's products
-      final response = await _client
-          .from('orders')
-          .select('*, order_items(*, products(*))')
-          .order('created_at', ascending: false);
+      debugPrint('📝 Found ${response.length} orders');
       
       List<Order> orders = [];
       for (final orderData in response) {
-        final order = Order.fromJson(orderData);
+        debugPrint('📝 Processing order: ${orderData['id']}');
         
-        // Parse order items and filter for seller's products
+        // Create the order object
+        final order = Order(
+          id: orderData['id'],
+          userId: orderData['user_id'],
+          totalAmount: (orderData['total_amount'] as num).toDouble(),
+          status: orderData['status'],
+          date: DateTime.parse(orderData['created_at']),
+          shippingName: orderData['shipping_name'],
+          shippingEmail: orderData['shipping_email'],
+          shippingPhone: orderData['shipping_phone'],
+          shippingAddress: orderData['shipping_address'],
+          shippingCity: orderData['shipping_city'],
+          shippingPostalCode: orderData['shipping_postal_code'],
+          items: [], // Will be populated below
+        );
+        
+        // Parse order items
         final items = <CartItem>[];
-        for (final itemData in orderData['order_items']) {
-          final productData = itemData['products'];
-          if (productData != null) {
-            final product = Product.fromJson({'products': productData});
-            if (productIds.contains(product.id)) {
+        if (orderData['order_items'] != null) {
+          for (final itemData in orderData['order_items']) {
+            final productData = itemData['products'];
+            if (productData != null) {
+              final product = Product(
+                id: productData['id'],
+                name: productData['name'],
+                description: productData['description'],
+                price: (productData['price'] as num).toDouble(),
+                imageUrl: productData['image_url'],
+                location: productData['location'],
+                category: productData['category'],
+                sellerId: productData['seller_id'],
+                isActive: productData['is_active'] ?? true,
+                createdAt: productData['created_at'],
+                updatedAt: productData['updated_at'],
+              );
+              
               items.add(CartItem(
                 product: product,
                 quantity: itemData['quantity'] as int,
@@ -608,16 +636,20 @@ class SupabaseService {
           }
         }
         
-        // Only add orders that have items from this seller
-        if (items.isNotEmpty) {
-          order.items = items;
-          orders.add(order);
-        }
+        order.items = items;
+        orders.add(order);
       }
       
+      debugPrint('✅ Successfully processed ${orders.length} orders with seller products');
       return orders;
     } catch (e) {
-      debugPrint('Error fetching seller orders: $e');
+      debugPrint('❌ Error fetching seller orders: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+        debugPrint('  - Hint: ${e.hint}');
+      }
       return [];
     }
   }
@@ -672,16 +704,58 @@ class SupabaseService {
   
   Future<bool> updateOrderStatus(String orderId, String newStatus) async {
     try {
-      final response = await _client
+      debugPrint('🔄 Updating order status for order: $orderId to: $newStatus');
+      
+      // Create a service role client for admin operations
+      final serviceClient = SupabaseClient(
+        supabaseUrl,
+        supabaseServiceRoleKey,
+      );
+      
+      // First verify the order exists
+      final orderExists = await serviceClient
           .from('orders')
-          .update({'status': newStatus})
+          .select('id')
           .eq('id', orderId)
-          .select()
-          .single();
+          .maybeSingle();
           
-      return response != null;
+      if (orderExists == null) {
+        debugPrint('❌ Order not found: $orderId');
+        return false;
+      }
+      
+      // Update the order status
+      final response = await serviceClient
+          .from('orders')
+          .update({
+            'status': newStatus,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', orderId)
+          .select('id, status')
+          .single();
+      
+      if (response == null) {
+        debugPrint('❌ Failed to update order status');
+        return false;
+      }
+      
+      // Verify the update was successful
+      if (response['status'] != newStatus) {
+        debugPrint('❌ Order status was not updated correctly');
+        return false;
+      }
+      
+      debugPrint('✅ Successfully updated order status to: ${response['status']}');
+      return true;
     } catch (e) {
-      debugPrint('Error updating order status: $e');
+      debugPrint('❌ Error updating order status: $e');
+      if (e is PostgrestException) {
+        debugPrint('  - Code: ${e.code}');
+        debugPrint('  - Message: ${e.message}');
+        debugPrint('  - Details: ${e.details}');
+        debugPrint('  - Hint: ${e.hint}');
+      }
       return false;
     }
   }
