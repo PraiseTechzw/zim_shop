@@ -13,6 +13,13 @@ A Flutter marketplace app with Supabase backend and Paynow payment processing.
 - Seller dashboard
 - Admin dashboard
 
+## Preview
+
+![App Preview 1](assets/preview/1.jpeg)
+![App Preview 2](assets/preview/2.jpeg)
+![App Preview 3](assets/preview/3.jpeg)
+![App Preview 4](assets/preview/4.jpeg)
+
 ## Setup Instructions
 
 ### 1. Supabase Setup
